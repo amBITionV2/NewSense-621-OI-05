@@ -236,8 +236,11 @@ const Dashboard = () => {
             </div>
           </Link>
 
-          <div className="group relative overflow-hidden bg-white/70 backdrop-blur-lg rounded-2xl shadow-xl border border-white/20 p-6 hover:shadow-2xl hover:scale-105 transition-all duration-300 hover:bg-gradient-to-br hover:from-orange-50 hover:to-red-50"
-               style={{animationDelay: '0.4s'}}>
+          <Link
+            to="/community"
+            className="group relative overflow-hidden bg-white/70 backdrop-blur-lg rounded-2xl shadow-xl border border-white/20 p-6 hover:shadow-2xl hover:scale-105 transition-all duration-300 hover:bg-gradient-to-br hover:from-orange-50 hover:to-red-50"
+            style={{animationDelay: '0.4s'}}
+          >
             <div className="absolute inset-0 bg-gradient-to-br from-orange-500/10 to-red-500/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
             <div className="relative z-10 flex items-center space-x-4">
               <div className="w-14 h-14 bg-gradient-to-br from-orange-500 to-red-600 rounded-xl flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform duration-300">
@@ -251,7 +254,7 @@ const Dashboard = () => {
             <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
               <Heart className="w-5 h-5 text-red-500 animate-bounce" />
             </div>
-          </div>
+          </Link>
         </div>
 
 

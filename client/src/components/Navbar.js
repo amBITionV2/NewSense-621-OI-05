@@ -12,7 +12,8 @@ import {
   Video,
   Languages,
   Home,
-  Plus
+  Plus,
+  Users
 } from 'lucide-react';
 
 const Navbar = () => {
@@ -71,6 +72,9 @@ const Navbar = () => {
                 </NavLink>
                 <NavLink to="/videos" icon={Video}>
                   Learn
+                </NavLink>
+                <NavLink to="/community" icon={Users}>
+                  Community
                 </NavLink>
                 
                 {user?.role === 'admin' && (
@@ -159,6 +163,13 @@ const Navbar = () => {
                     onClick={() => setIsMenuOpen(false)}
                   >
                     Learn
+                  </NavLink>
+                  <NavLink 
+                    to="/community" 
+                    icon={Users}
+                    onClick={() => setIsMenuOpen(false)}
+                  >
+                    Community
                   </NavLink>
                   
                   {user?.role === 'admin' && (

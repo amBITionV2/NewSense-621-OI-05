@@ -19,6 +19,7 @@ import EducationalVideos from './pages/EducationalVideos';
 import Translation from './pages/Translation';
 import AdminDashboard from './pages/AdminDashboard';
 import Profile from './pages/Profile';
+import Community from './pages/Community';
 
 // Protected Route Component
 const ProtectedRoute = ({ children, adminOnly = false }) => {
@@ -132,6 +133,14 @@ function AppContent() {
               element={
                 <ProtectedRoute>
                   <Profile />
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/community" 
+              element={
+                <ProtectedRoute>
+                  <Community />
                 </ProtectedRoute>
               } 
             />
