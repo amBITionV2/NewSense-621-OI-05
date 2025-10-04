@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import axios from 'axios';
 import toast from 'react-hot-toast';
-import config from '../config';
+import LeafletMap from '../components/LeafletMap';
 import { 
   MapPin, 
   Camera, 
@@ -55,9 +55,6 @@ const CreateComplaint = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
   const fileInputRef = useRef(null);
-  const mapRef = useRef(null);
-  const [map, setMap] = useState(null);
-  const [marker, setMarker] = useState(null);
 
   const [formData, setFormData] = useState({
     title: '',
@@ -77,7 +74,7 @@ const CreateComplaint = () => {
   const [files, setFiles] = useState([]);
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState({});
-  const [currentLocation, setCurrentLocation] = useState(null);
+  const [selectedLocation, setSelectedLocation] = useState(null);
   const [hoveredCategory, setHoveredCategory] = useState(null);
   const [isListeningTitle, setIsListeningTitle] = useState(false);
   const [isListeningDesc, setIsListeningDesc] = useState(false);
@@ -104,130 +101,53 @@ const CreateComplaint = () => {
     { value: 'urgent', label: 'Urgent', color: 'bg-red-100 text-red-800' }
   ];
 
-  // Initialize Google Maps
-  useEffect(() => {
-    const initMap = () => {
-      if (window.google && window.google.maps && window.google.maps.Map) {
-        const defaultLocation = { lat: 28.6139, lng: 77.2090 }; // Delhi coordinates
-
-        const mapInstance = new window.google.maps.Map(mapRef.current, {
-          zoom: 13,
-          center: defaultLocation,
-          mapTypeControl: false,
-          streetViewControl: false,
-          fullscreenControl: false,
-        });
-
-        setMap(mapInstance);
-
-        // Add click listener to map
-        mapInstance.addListener('click', (event) => {
-          const lat = event.latLng.lat();
-          const lng = event.latLng.lng();
-
-          setFormData(prev => ({
-            ...prev,
-            location: {
-              ...prev.location,
-              coordinates: { lat, lng }
-            }
-          }));
-
-          // Update marker
-          if (marker) {
-            marker.setPosition({ lat, lng });
-          } else {
-            const newMarker = new window.google.maps.Marker({
-              position: { lat, lng },
-              map: mapInstance,
-              draggable: true,
-            });
-            setMarker(newMarker);
-
-            // Add drag listener
-            newMarker.addListener('dragend', (event) => {
-              const newLat = event.latLng.lat();
-              const newLng = event.latLng.lng();
-              setFormData(prev => ({
-                ...prev,
-                location: {
-                  ...prev.location,
-                  coordinates: { lat: newLat, lng: newLng }
-                }
-              }));
-            });
-          }
-
-          // Reverse geocoding
-          reverseGeocode(lat, lng);
-        });
-
-        // Get current location
-        if (navigator.geolocation) {
-          navigator.geolocation.getCurrentPosition(
-            (position) => {
-              const lat = position.coords.latitude;
-              const lng = position.coords.longitude;
-              setCurrentLocation({ lat, lng });
-              mapInstance.setCenter({ lat, lng });
-            },
-            (error) => {
-              console.error('Error getting current location:', error);
-            }
-          );
+  // Handle map location selection
+  const handleLocationSelect = (location) => {
+    if (location.lat && location.lng) {
+      setSelectedLocation([location.lat, location.lng]);
+      setFormData(prev => ({
+        ...prev,
+        location: {
+          ...prev.location,
+          coordinates: { lat: location.lat, lng: location.lng }
         }
-      } else {
-        console.warn('Google Maps is not available. Location features will be disabled.');
-        // Hide the map container and show a message
-        const mapContainer = document.getElementById('map');
-        if (mapContainer) {
-          mapContainer.style.display = 'none';
-          const mapError = document.createElement('div');
-          mapError.className = 'text-center p-4 bg-yellow-50 border border-yellow-200 rounded-lg';
-          mapError.innerHTML = '<p class="text-yellow-800">Map unavailable. You can still report issues without location.</p>';
-          mapContainer.parentNode.insertBefore(mapError, mapContainer);
-        }
-      }
-    };
-
-    // Load Google Maps script if not already loaded
-    if (!window.google) {
-      const script = document.createElement('script');
-      script.src = `https://maps.googleapis.com/maps/api/js?key=${config.GOOGLE_MAPS_API_KEY}&libraries=places`;
-      script.onload = initMap;
-      script.onerror = () => {
-        console.warn('Google Maps failed to load. Location features will be disabled.');
-        // Hide the map container and show a message
-        const mapContainer = document.getElementById('map');
-        if (mapContainer) {
-          mapContainer.style.display = 'none';
-          const mapError = document.createElement('div');
-          mapError.className = 'text-center p-4 bg-yellow-50 border border-yellow-200 rounded-lg';
-          mapError.innerHTML = '<p class="text-yellow-800">Map unavailable. You can still report issues without location.</p>';
-          mapContainer.parentNode.insertBefore(mapError, mapContainer);
-        }
-      };
-      document.head.appendChild(script);
-    } else {
-      initMap();
+      }));
+      
+      // Simple reverse geocoding using a free service
+      reverseGeocode(location.lat, location.lng);
     }
-  }, []);
+  };
 
-  const reverseGeocode = (lat, lng) => {
-    if (window.google && window.google.maps) {
-      const geocoder = new window.google.maps.Geocoder();
-      geocoder.geocode({ location: { lat, lng } }, (results, status) => {
-        if (status === 'OK' && results[0]) {
-          const address = results[0].formatted_address;
-          setFormData(prev => ({
-            ...prev,
-            location: {
-              ...prev.location,
-              address
-            }
-          }));
+  const reverseGeocode = async (lat, lng) => {
+    try {
+      // Using OpenStreetMap Nominatim API (free)
+      const response = await fetch(
+        `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&addressdetails=1`
+      );
+      const data = await response.json();
+      
+      if (data.display_name) {
+        setFormData(prev => ({
+          ...prev,
+          location: {
+            ...prev.location,
+            address: data.display_name,
+            city: data.address?.city || data.address?.town || data.address?.village || '',
+            state: data.address?.state || '',
+            pincode: data.address?.postcode || ''
+          }
+        }));
+      }
+    } catch (error) {
+      console.error('Reverse geocoding error:', error);
+      // Set a basic address if reverse geocoding fails
+      setFormData(prev => ({
+        ...prev,
+        location: {
+          ...prev.location,
+          address: `Lat: ${lat.toFixed(6)}, Lng: ${lng.toFixed(6)}`
         }
-      });
+      }));
     }
   };
 
@@ -310,28 +230,28 @@ const CreateComplaint = () => {
   };
 
   const useCurrentLocation = () => {
-    if (currentLocation && map) {
-      map.setCenter(currentLocation);
-      setFormData(prev => ({
-        ...prev,
-        location: {
-          ...prev.location,
-          coordinates: currentLocation
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          const lat = position.coords.latitude;
+          const lng = position.coords.longitude;
+          setSelectedLocation([lat, lng]);
+          setFormData(prev => ({
+            ...prev,
+            location: {
+              ...prev.location,
+              coordinates: { lat, lng }
+            }
+          }));
+          reverseGeocode(lat, lng);
+        },
+        (error) => {
+          console.error('Error getting current location:', error);
+          toast.error('Unable to get your current location');
         }
-      }));
-
-      if (marker) {
-        marker.setPosition(currentLocation);
-      } else {
-        const newMarker = new window.google.maps.Marker({
-          position: currentLocation,
-          map: map,
-          draggable: true,
-        });
-        setMarker(newMarker);
-      }
-
-      reverseGeocode(currentLocation.lat, currentLocation.lng);
+      );
+    } else {
+      toast.error('Geolocation is not supported by this browser');
     }
   };
 
@@ -354,13 +274,13 @@ const CreateComplaint = () => {
       newErrors.category = 'Please select a category';
     }
 
-    // Only require location if map is available
-    if (window.google && window.google.maps && (!formData.location.coordinates.lat || !formData.location.coordinates.lng)) {
+    // Require location coordinates
+    if (!formData.location.coordinates.lat || !formData.location.coordinates.lng) {
       newErrors.location = 'Please select a location on the map';
     }
 
-    // Only require address if map is available
-    if (window.google && window.google.maps && !formData.location.address.trim()) {
+    // Require address
+    if (!formData.location.address.trim()) {
       newErrors.address = 'Address is required';
     }
 
@@ -587,22 +507,27 @@ const CreateComplaint = () => {
                 Location *
               </label>
               <div className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <p className="text-sm text-gray-600">
-                    Click on the map to mark the exact location of the issue
-                  </p>
-                  {currentLocation && (
-                    <button
-                      type="button"
-                      onClick={useCurrentLocation}
-                      className={btnSecondary}
-                    >
-                      <MapPin size={18} className="inline mr-1" />
-                      Use Current Location
-                    </button>
-                  )}
-                </div>
-                <div className="map-container rounded-xl border border-indigo-200 overflow-hidden" ref={mapRef}></div>
+                 <div className="flex items-center justify-between">
+                   <p className="text-sm text-gray-600">
+                     Click on the map to mark the exact location of the issue
+                   </p>
+                   <button
+                     type="button"
+                     onClick={useCurrentLocation}
+                     className={btnSecondary}
+                   >
+                     <MapPin size={18} className="inline mr-1" />
+                     Use Current Location
+                   </button>
+                 </div>
+                 <div className="map-container rounded-xl border border-indigo-200 overflow-hidden" style={{ height: '400px' }}>
+                   <LeafletMap 
+                     onIssueClick={handleLocationSelect}
+                     selectedIssue={selectedLocation ? { location: { coordinates: { lat: selectedLocation[0], lng: selectedLocation[1] } } } : null}
+                     isInteractive={true}
+                     className="h-full w-full"
+                   />
+                 </div>
                 {errors.location && (
                   <p className="text-sm text-red-600">{errors.location}</p>
                 )}
