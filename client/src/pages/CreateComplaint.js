@@ -384,33 +384,22 @@ const CreateComplaint = () => {
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Category *
                 </label>
-                {/* Debug info - remove this later */}
-                {process.env.NODE_ENV === 'development' && (
-                  <div className="text-xs text-gray-500 mb-2">
-                    Debug: Hovered category = {hoveredCategory || 'none'}
-                  </div>
-                )}
                 <div className="relative overflow-visible">
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
                     {categories.map(category => (
                       <div
                         key={category.value}
                         className="relative"
-                        onMouseEnter={() => {
-                          console.log('Hovering over:', category.value);
-                          setHoveredCategory(category.value);
-                        }}
-                        onMouseLeave={() => {
-                          console.log('Leaving:', category.value);
-                          setHoveredCategory(null);
-                        }}
+                        style={{ zIndex: hoveredCategory === category.value ? 100 : 1 }}
+                        onMouseEnter={() => setHoveredCategory(category.value)}
+                        onMouseLeave={() => setHoveredCategory(null)}
                       >
                         <label className={`block cursor-pointer rounded-lg border-2 p-3 transition-all duration-200 ${
                           formData.category === category.value
-                            ? 'border-blue-500 bg-blue-50 text-blue-700'
+                            ? 'border-blue-500 bg-blue-50 text-blue-700 shadow-md'
                             : hoveredCategory === category.value
-                            ? 'border-purple-400 bg-purple-50 text-purple-700'
-                            : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'
+                            ? 'border-blue-400 bg-blue-50 text-blue-600 shadow-lg'
+                            : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50 hover:shadow-sm'
                         }`}>
                           <input
                             type="radio"
@@ -423,33 +412,19 @@ const CreateComplaint = () => {
                           <div className="font-medium text-sm">{category.label}</div>
                         </label>
                         
-                        {/* Tooltip */}
+                        {/* Enhanced Tooltip */}
                         {hoveredCategory === category.value && (
-                          <div className="absolute z-50 w-72 p-4 mt-3 bg-black text-white text-sm rounded-lg shadow-2xl left-0 top-full">
-                            <div className="leading-relaxed">{category.description}</div>
-                            {/* Arrow */}
-                            <div className="absolute -top-2 left-4 w-3 h-3 bg-black rotate-45"></div>
+                          <div className="fixed z-[9999] w-80 p-4 mt-2 bg-gray-900 text-white text-sm rounded-lg shadow-2xl left-1/2 transform -translate-x-1/2 top-full border-2 border-gray-700 pointer-events-none">
+                            <div className="text-center">
+                              <div className="font-semibold text-gray-300 mb-2">{category.label}</div>
+                              <div className="leading-relaxed text-gray-200">{category.description}</div>
+                            </div>
+                            {/* Arrow pointing up */}
+                            <div className="absolute -top-2 left-1/2 transform -translate-x-1/2 w-3 h-3 bg-gray-900 rotate-45 border-l border-t border-gray-700"></div>
                           </div>
                         )}
                       </div>
                     ))}
-                  </div>
-                  
-                  {/* Fallback dropdown for mobile */}
-                  <div className="mt-4 sm:hidden">
-                    <select
-                      name="category"
-                      value={formData.category}
-                      onChange={handleChange}
-                      className={`input-field px-3 ${errors.category ? 'border-red-500' : ''}`}
-                    >
-                      <option value="">Select a category</option>
-                      {categories.map(category => (
-                        <option key={category.value} value={category.value}>
-                          {category.label}
-                        </option>
-                      ))}
-                    </select>
                   </div>
                 </div>
                 {errors.category && (
