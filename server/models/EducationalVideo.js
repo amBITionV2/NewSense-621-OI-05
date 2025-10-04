@@ -37,6 +37,8 @@ const educationalVideoSchema = new mongoose.Schema({
   },
   videoUrl: String,
   thumbnailUrl: String,
+  youtubeVideoId: String,
+  youtubeUrl: String,
   transcript: String,
   subtitles: [{
     language: String,
@@ -86,7 +88,21 @@ const educationalVideoSchema = new mongoose.Schema({
       type: Date,
       default: Date.now
     }
-  }]
+  }],
+  // Gemini Veo specific fields
+  learningObjectives: [String],
+  practicalTips: [String],
+  callToAction: String,
+  videoQuality: {
+    type: String,
+    enum: ['standard', 'hd', '4k'],
+    default: 'hd'
+  },
+  generationMethod: {
+    type: String,
+    enum: ['youtube', 'gemini-veo', 'openai', 'manual'],
+    default: 'youtube'
+  }
 }, {
   timestamps: true
 });
