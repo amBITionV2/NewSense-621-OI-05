@@ -201,8 +201,8 @@ router.get('/', auth, async (req, res) => {
     // Check if MongoDB is connected, otherwise use mock database
     if (mongoose.connection.readyState === 1) {
       // Use MongoDB
-      const user = await User.findById(req.userId).select('role');
-      if (user && user.role === 'citizen') {
+      // For regular users (not admins), only show their own complaints
+      if (req.userType !== 'admin') {
         query.user = req.userId;
       }
 
@@ -221,8 +221,8 @@ router.get('/', auth, async (req, res) => {
       total = await Complaint.countDocuments(query);
     } else {
       // Use mock database
-      const user = mockDB.findUserById(req.userId);
-      if (user && user.role === 'citizen') {
+      // For regular users (not admins), only show their own complaints
+      if (req.userType !== 'admin') {
         query.user = req.userId;
       }
 
