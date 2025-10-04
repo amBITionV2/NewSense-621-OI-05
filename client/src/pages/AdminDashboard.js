@@ -11,13 +11,17 @@ import {
   Eye
 } from 'lucide-react';
 import LoadingSpinner from '../components/LoadingSpinner';
+import { useAuth } from '../context/AuthContext';
 
 const AdminDashboard = () => {
+  const { user } = useAuth();
   const [dashboardData, setDashboardData] = useState(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    console.log('Admin Dashboard - Current user:', user);
     fetchDashboardData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const fetchDashboardData = async () => {
@@ -51,6 +55,15 @@ const AdminDashboard = () => {
           <p className="text-gray-600">
             Overview of the citizen complaint management system.
           </p>
+        </div>
+
+        {/* Signed-in Admin Name (centered) */}
+        <div className="flex justify-center mb-8">
+          <div className="inline-flex items-center space-x-2 bg-white rounded-full px-4 py-2 shadow-sm border border-gray-200">
+            <Users className="w-4 h-4 text-blue-600" />
+            <span className="text-sm text-gray-700">Signed in as</span>
+            <span className="text-sm font-semibold text-gray-900">{user?.name || 'Admin'}</span>
+          </div>
         </div>
 
         {/* Stats Cards */}

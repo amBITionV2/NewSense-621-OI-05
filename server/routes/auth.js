@@ -27,7 +27,7 @@ router.post('/register', [
   body('name').trim().isLength({ min: 2 }).withMessage('Name must be at least 2 characters'),
   body('email').isEmail().normalizeEmail().withMessage('Please provide a valid email'),
   body('password').isLength({ min: 6 }).withMessage('Password must be at least 6 characters'),
-  body('phone').isMobilePhone().withMessage('Please provide a valid phone number')
+  body('phone').optional().isMobilePhone().withMessage('Please provide a valid phone number')
 ], async (req, res) => {
   try {
     const errors = validationResult(req);
@@ -35,7 +35,16 @@ router.post('/register', [
       return res.status(400).json({ errors: errors.array() });
     }
 
-    const { name, email, password, phone, location } = req.body;
+    const { 
+      name, email, password, phone, alternateContact, location,
+      aadhaarNumber, dateOfBirth, gender, fatherName, motherName,
+      caste, religion, occupation, salary, hasIncome, languagesSpoken,
+      nativePlace, residenceType, governmentIdNumber,
+      aadhaarDocument, governmentIdDocument, citizenshipProofDocument, citizenshipProofType
+    } = req.body;
+    
+    // Determine role based on presence of government ID
+    const role = governmentIdNumber ? 'admin' : 'citizen';
 
     // Check if user already exists
     if (User) {
@@ -49,8 +58,27 @@ router.post('/register', [
         email,
         password,
         phone,
+        alternateContact,
         location,
-        role: 'citizen',
+        role,
+        aadhaarNumber,
+        aadhaarDocument,
+        dateOfBirth,
+        gender,
+        fatherName,
+        motherName,
+        caste,
+        religion,
+        occupation,
+        salary,
+        hasIncome,
+        languagesSpoken,
+        nativePlace,
+        residenceType,
+        governmentIdNumber,
+        governmentIdDocument,
+        citizenshipProofDocument,
+        citizenshipProofType,
         preferences: {
           language: 'en',
           notifications: {
@@ -60,6 +88,7 @@ router.post('/register', [
           }
         },
         isActive: true,
+        verificationStatus: 'pending',
         lastLogin: new Date()
       });
 
@@ -81,8 +110,27 @@ router.post('/register', [
       email,
       password: hashedPassword,
       phone,
+      alternateContact,
       location,
-      role: 'citizen',
+      role,
+      aadhaarNumber,
+      aadhaarDocument,
+      dateOfBirth,
+      gender,
+      fatherName,
+      motherName,
+      caste,
+      religion,
+      occupation,
+      salary,
+      hasIncome,
+      languagesSpoken,
+      nativePlace,
+      residenceType,
+      governmentIdNumber,
+      governmentIdDocument,
+      citizenshipProofDocument,
+      citizenshipProofType,
       preferences: {
         language: 'en',
         notifications: {
@@ -92,6 +140,7 @@ router.post('/register', [
         }
       },
       isActive: true,
+      verificationStatus: 'pending',
       lastLogin: new Date()
     });
 
