@@ -1,5 +1,14 @@
 const jwt = require('jsonwebtoken');
 const mockDB = require('../mockDatabase');
+const config = require('../config.dev');
+
+let User;
+try {
+  User = require('../models/User');
+} catch (e) {
+  // if model can't be loaded, we'll fallback to mockDB
+  User = null;
+}
 
 const auth = async (req, res, next) => {
   try {
@@ -9,10 +18,18 @@ const auth = async (req, res, next) => {
       return res.status(401).json({ message: 'No token, authorization denied' });
     }
 
-    const config = require('../config.dev');
     const decoded = jwt.verify(token, config.JWT_SECRET);
-    const user = mockDB.findUserById(decoded.userId);
-    
+
+    let user = null;
+    if (User) {
+      user = await User.findById(decoded.userId).lean();
+    }
+
+    if (!user) {
+      // fallback to mockDB (demo)
+      user = mockDB.findUserById(decoded.userId);
+    }
+
     if (!user || !user.isActive) {
       return res.status(401).json({ message: 'Token is not valid' });
     }
