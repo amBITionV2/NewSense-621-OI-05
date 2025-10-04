@@ -474,6 +474,7 @@ const Community = () => {
     const fetchComplaints = async () => {
       try {
         setLoading(true);
+        console.log('Fetching complaints from:', `${config.API_URL}/api/complaints/public`);
         const response = await axios.get(`${config.API_URL}/api/complaints/public`, {
           params: {
             limit: 50,
@@ -481,46 +482,56 @@ const Community = () => {
           }
         });
         
+        console.log('API Response:', response.data);
+        console.log('Number of complaints from API:', response.data.complaints.length);
+        
         // Transform API data to match the expected format
-        const transformedPosts = response.data.complaints.map(complaint => ({
-          id: complaint._id,
-          user: {
-            name: complaint.user?.name || 'Anonymous',
-            avatar: complaint.user?.name?.charAt(0) || 'A',
-            role: 'citizen',
-            verified: true
-          },
-          title: complaint.title,
-          description: complaint.description,
-          image: complaint.images && complaint.images.length > 0 
-            ? `${config.API_URL}${complaint.images[0].url}` 
-            : null,
-          category: complaint.category,
-          priority: complaint.priority,
-          location: {
-            address: complaint.location?.address || 'Location not specified',
-            city: complaint.location?.city || 'Unknown',
-            coordinates: complaint.location?.coordinates || { lat: 0, lng: 0 }
-          },
-          status: complaint.status || 'open',
-          votes: {
-            up: Math.floor(Math.random() * 50) + 5, // Mock votes for now
-            down: Math.floor(Math.random() * 10),
-            verified: Math.floor(Math.random() * 20) + 2
-          },
-          comments: [], // Comments will be empty for now
-          createdAt: complaint.createdAt,
-          tags: [complaint.category, complaint.priority, complaint.status],
-          isRealReport: true // Mark as real user report
-        }));
+        const transformedPosts = response.data.complaints.map(complaint => {
+          console.log('Transforming complaint:', complaint.title);
+          return {
+            id: complaint._id || complaint.id,
+            user: {
+              name: complaint.user?.name || 'Anonymous',
+              avatar: complaint.user?.name?.charAt(0) || 'A',
+              role: 'citizen',
+              verified: true
+            },
+            title: complaint.title,
+            description: complaint.description,
+            image: complaint.images && complaint.images.length > 0 
+              ? `${config.API_URL}${complaint.images[0].url}` 
+              : null,
+            category: complaint.category,
+            priority: complaint.priority,
+            location: {
+              address: complaint.location?.address || 'Location not specified',
+              city: complaint.location?.city || 'Unknown',
+              coordinates: complaint.location?.coordinates || { lat: 0, lng: 0 }
+            },
+            status: complaint.status || 'open',
+            votes: {
+              up: Math.floor(Math.random() * 50) + 5, // Mock votes for now
+              down: Math.floor(Math.random() * 10),
+              verified: Math.floor(Math.random() * 20) + 2
+            },
+            comments: [], // Comments will be empty for now
+            createdAt: complaint.createdAt,
+            tags: [complaint.category, complaint.priority, complaint.status],
+            isRealReport: true // Mark as real user report
+          };
+        });
 
         // Combine hardcoded data with real API data
         console.log('Mock posts:', mockPosts.length);
         console.log('Real posts:', transformedPosts.length);
         console.log('Total posts:', mockPosts.length + transformedPosts.length);
-        setPosts([...mockPosts, ...transformedPosts]);
+        const allPosts = [...mockPosts, ...transformedPosts];
+        console.log('Setting posts:', allPosts.length);
+        console.log('First few posts:', allPosts.slice(0, 3).map(p => ({ title: p.title, isReal: p.isRealReport })));
+        setPosts(allPosts);
       } catch (error) {
         console.error('Error fetching complaints:', error);
+        console.error('Error details:', error.response?.data || error.message);
         // If API fails, just use hardcoded data
         setPosts(mockPosts);
       } finally {
@@ -610,6 +621,16 @@ const Community = () => {
                          post.description.toLowerCase().includes(searchTerm.toLowerCase());
     const isUserPost = post.user.name === user?.name;
     const matchesTab = activeTab === 'community' ? !isUserPost : isUserPost;
+    
+    console.log('Filtering post:', post.title, {
+      matchesFilter,
+      matchesSearch,
+      isUserPost,
+      matchesTab,
+      category: post.category,
+      selectedFilter
+    });
+    
     return matchesFilter && matchesSearch && matchesTab;
   });
 
@@ -676,6 +697,17 @@ const Community = () => {
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
                 </svg>
                 <span>Refresh</span>
+              </button>
+              <button
+                onClick={() => {
+                  console.log('Current posts:', posts.length);
+                  console.log('Filtered posts:', filteredPosts.length);
+                  console.log('Posts data:', posts.map(p => ({ title: p.title, isReal: p.isRealReport })));
+                }}
+                className="flex items-center space-x-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+                title="Debug posts"
+              >
+                <span>Debug</span>
               </button>
             </div>
           </div>

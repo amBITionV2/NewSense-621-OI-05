@@ -18,6 +18,8 @@ An intelligent citizen complaint management system that leverages AI to automate
 - **AI-Powered Social Media**: Automatic posting to Twitter and Instagram until issues are resolved
 - **Smart Translation**: AI learns and translates content continuously as users interact
 - **Educational Content**: Daily AI-generated videos about civic responsibility and community awareness
+- **Community Integration**: Real-time community feed showing user reports with hardcoded sample data
+- **Voice-to-Text**: Speech recognition for easy complaint submission in multiple languages
 
 ### Complaint Management
 - **Categorized Reporting**: Report potholes, garbage issues, street lighting, water supply, sewage, traffic signals, and more
@@ -25,6 +27,8 @@ An intelligent citizen complaint management system that leverages AI to automate
 - **Media Upload**: Attach photos and videos to complaints
 - **Real-time Tracking**: Monitor complaint status and receive updates
 - **Admin Dashboard**: Comprehensive management interface for administrators
+- **Community Visibility**: User reports appear in community feed for public engagement
+- **Live Report Indicators**: Visual badges distinguish real user reports from sample data
 
 ### AI Features
 - **Social Media Automation**: AI generates and posts content to social platforms
@@ -78,6 +82,19 @@ An intelligent citizen complaint management system that leverages AI to automate
    ```
 
 5. **Start the development servers**
+
+   **For Windows PowerShell:**
+   ```powershell
+   # Terminal 1 - Start Backend Server
+   cd server
+   npm start
+   
+   # Terminal 2 - Start Frontend Server  
+   cd client
+   npm start
+   ```
+
+   **For Linux/Mac:**
    ```bash
    npm run dev
    ```
@@ -119,6 +136,7 @@ citizen-complaint-portal/
 ### Complaints
 - `POST /api/complaints` - Create new complaint
 - `GET /api/complaints` - Get complaints (with filters)
+- `GET /api/complaints/public` - Get public complaints for community feed
 - `GET /api/complaints/:id` - Get single complaint
 - `PUT /api/complaints/:id/status` - Update complaint status
 - `POST /api/complaints/:id/feedback` - Submit feedback
@@ -197,6 +215,31 @@ citizen-complaint-portal/
 - **File Upload**: Drag-and-drop media upload
 - **Progress Tracking**: Visual status indicators
 - **Multi-language**: Support for multiple languages
+- **Community Engagement**: Interactive community feed with voting and comments
+- **Debug Tools**: Built-in debugging tools for development and troubleshooting
+- **Refresh Functionality**: Manual refresh to see latest community reports
+
+## 🌐 Community Features
+
+### Community Feed
+- **Mixed Content**: Combines 12 hardcoded sample posts with real user reports
+- **Live Report Indicators**: Green "Live Report" badges distinguish real user submissions
+- **Interactive Engagement**: Voting, commenting, and sharing functionality
+- **Category Filtering**: Filter posts by issue categories (potholes, garbage, street lighting, etc.)
+- **Search Functionality**: Search through posts by title and description
+- **Real-time Updates**: Refresh button to see latest community reports
+
+### Report Visibility
+- **Public API Endpoint**: `/api/complaints/public` for community data access
+- **Automatic Integration**: User reports automatically appear in community feed
+- **Visual Distinction**: Clear indicators between sample data and real reports
+- **Fallback Support**: Works with both MongoDB and mock database
+
+### Debug Tools
+- **Console Logging**: Comprehensive debugging information in browser console
+- **Debug Button**: Green debug button to inspect post data and filtering
+- **API Monitoring**: Real-time API call logging and error reporting
+- **Data Validation**: Automatic data structure validation and transformation
 
 ## 🔒 Security Features
 
@@ -254,14 +297,82 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 For support, email support@citizenportal.com or create an issue in the repository.
 
+## 🔧 Troubleshooting
+
+### Community Reports Not Showing
+
+If user reports are not appearing in the community section:
+
+1. **Check Browser Console** (F12 → Console tab):
+   - Look for API call logs: "Fetching complaints from: http://localhost:5000/api/complaints/public"
+   - Check for error messages or CORS issues
+   - Verify data transformation logs
+
+2. **Use Debug Tools**:
+   - Click the green "Debug" button in the community page header
+   - Check console output for post counts and data structure
+   - Verify API response contains complaint data
+
+3. **Verify Server Status**:
+   - Ensure backend server is running on port 5000
+   - Ensure frontend server is running on port 3000
+   - Test API endpoint directly: `http://localhost:5000/api/complaints/public`
+
+4. **Check Data Flow**:
+   - Reports should appear with "Live Report" green badge
+   - Sample data (12 posts) should always be visible
+   - Real reports are added to the existing sample data
+
+### Common Issues
+
+- **CORS Errors**: Ensure server CORS configuration allows localhost:3000
+- **API Connection**: Verify both servers are running and accessible
+- **Data Transformation**: Check console logs for data structure issues
+- **Filtering**: Ensure reports match selected category filter
+
+### Debug Console Commands
+
+```javascript
+// Check current posts
+console.log('Current posts:', posts.length);
+
+// Check filtered posts
+console.log('Filtered posts:', filteredPosts.length);
+
+// Check API response
+fetch('http://localhost:5000/api/complaints/public')
+  .then(res => res.json())
+  .then(data => console.log('API Response:', data));
+```
+
+## 🆕 Recent Updates
+
+### Community Integration (Latest)
+- ✅ **Public API Endpoint**: Added `/api/complaints/public` for community data access
+- ✅ **Mixed Content Feed**: Combines 12 hardcoded sample posts with real user reports
+- ✅ **Live Report Indicators**: Visual badges distinguish real user submissions
+- ✅ **Debug Tools**: Comprehensive debugging tools for development and troubleshooting
+- ✅ **Refresh Functionality**: Manual refresh to see latest community reports
+- ✅ **Fallback Support**: Works with both MongoDB and mock database
+- ✅ **Voice-to-Text**: Speech recognition for complaint submission in multiple languages
+
+### Technical Improvements
+- ✅ **Enhanced Error Handling**: Better error messages and fallback mechanisms
+- ✅ **Console Logging**: Detailed debugging information for development
+- ✅ **Data Transformation**: Robust data structure handling for API responses
+- ✅ **CORS Configuration**: Proper cross-origin resource sharing setup
+- ✅ **PowerShell Support**: Windows PowerShell command compatibility
+
 ## 🔮 Future Enhancements
 
 - **Mobile App**: React Native mobile application
-- **Voice Reporting**: Voice-to-text complaint submission
+- **Voice Reporting**: Enhanced voice-to-text complaint submission
 - **AR Integration**: Augmented reality for issue visualization
 - **Blockchain**: Transparent complaint tracking
 - **IoT Integration**: Smart city sensor data integration
 - **Advanced Analytics**: Machine learning for predictive insights
+- **Real-time Notifications**: Push notifications for community updates
+- **Advanced Filtering**: More sophisticated filtering and search options
 
 ---
 
