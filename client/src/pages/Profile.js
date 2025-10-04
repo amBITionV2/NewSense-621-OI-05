@@ -117,7 +117,7 @@ const Profile = () => {
                     name="name"
                     value={formData.name}
                     onChange={handleChange}
-                    className="input-field"
+                    className="input-field px-3"
                     required
                   />
                 </div>
@@ -147,7 +147,7 @@ const Profile = () => {
                   name="phone"
                   value={formData.phone}
                   onChange={handleChange}
-                  className="input-field"
+                  className="input-field px-3"
                 />
               </div>
             </div>
@@ -194,7 +194,7 @@ const Profile = () => {
                     name="preferences.language"
                     value={formData.preferences.language}
                     onChange={handleChange}
-                    className="input-field"
+                    className="input-field px-3"
                   >
                     {languages.map(lang => (
                       <option key={lang.code} value={lang.code}>

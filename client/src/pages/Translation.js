@@ -118,7 +118,7 @@ const Translation = () => {
                   name="sourceLanguage"
                   value={formData.sourceLanguage}
                   onChange={handleChange}
-                  className="input-field"
+                  className="input-field px-3"
                 >
                   {languages.map(lang => (
                     <option key={lang.code} value={lang.code}>
@@ -146,7 +146,7 @@ const Translation = () => {
                   name="targetLanguage"
                   value={formData.targetLanguage}
                   onChange={handleChange}
-                  className="input-field"
+                  className="input-field px-3"
                 >
                   {languages.filter(lang => lang.code !== 'auto').map(lang => (
                     <option key={lang.code} value={lang.code}>

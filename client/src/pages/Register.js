@@ -161,7 +161,7 @@ const Register = () => {
                   autoComplete="name"
                   value={formData.name}
                   onChange={handleChange}
-                  className={`input-field pl-10 ${errors.name ? 'border-red-500' : ''}`}
+                  className={`input-field pl-14 ${errors.name ? 'border-red-500' : ''}`}
                   placeholder="Enter your full name"
                 />
               </div>
@@ -185,7 +185,7 @@ const Register = () => {
                   autoComplete="email"
                   value={formData.email}
                   onChange={handleChange}
-                  className={`input-field pl-10 ${errors.email ? 'border-red-500' : ''}`}
+                  className={`input-field pl-14 ${errors.email ? 'border-red-500' : ''}`}
                   placeholder="Enter your email"
                 />
               </div>
@@ -209,7 +209,7 @@ const Register = () => {
                   autoComplete="tel"
                   value={formData.phone}
                   onChange={handleChange}
-                  className={`input-field pl-10 ${errors.phone ? 'border-red-500' : ''}`}
+                  className={`input-field pl-14 ${errors.phone ? 'border-red-500' : ''}`}
                   placeholder="Enter your phone number"
                 />
               </div>
@@ -234,7 +234,7 @@ const Register = () => {
                   autoComplete="new-password"
                   value={formData.password}
                   onChange={handleChange}
-                  className={`input-field pl-10 pr-10 ${errors.password ? 'border-red-500' : ''}`}
+                  className={`input-field pl-14 pr-12 ${errors.password ? 'border-red-500' : ''}`}
                   placeholder="Create a password"
                 />
                 <button
@@ -269,7 +269,7 @@ const Register = () => {
                   autoComplete="new-password"
                   value={formData.confirmPassword}
                   onChange={handleChange}
-                  className={`input-field pl-10 pr-10 ${errors.confirmPassword ? 'border-red-500' : ''}`}
+                  className={`input-field pl-14 pr-12 ${errors.confirmPassword ? 'border-red-500' : ''}`}
                   placeholder="Confirm your password"
                 />
                 <button
@@ -303,7 +303,7 @@ const Register = () => {
                   type="text"
                   value={formData.location.address}
                   onChange={handleChange}
-                  className={`input-field ${errors['location.address'] ? 'border-red-500' : ''}`}
+                  className={`input-field px-3 ${errors['location.address'] ? 'border-red-500' : ''}`}
                   placeholder="Enter your address"
                 />
                 {errors['location.address'] && (
@@ -322,7 +322,7 @@ const Register = () => {
                     type="text"
                     value={formData.location.city}
                     onChange={handleChange}
-                    className={`input-field ${errors['location.city'] ? 'border-red-500' : ''}`}
+                    className={`input-field px-3 ${errors['location.city'] ? 'border-red-500' : ''}`}
                     placeholder="City"
                   />
                   {errors['location.city'] && (
@@ -340,7 +340,7 @@ const Register = () => {
                     type="text"
                     value={formData.location.state}
                     onChange={handleChange}
-                    className={`input-field ${errors['location.state'] ? 'border-red-500' : ''}`}
+                    className={`input-field px-3 ${errors['location.state'] ? 'border-red-500' : ''}`}
                     placeholder="State"
                   />
                   {errors['location.state'] && (
@@ -359,7 +359,7 @@ const Register = () => {
                   type="text"
                   value={formData.location.pincode}
                   onChange={handleChange}
-                  className={`input-field ${errors['location.pincode'] ? 'border-red-500' : ''}`}
+                  className={`input-field px-3 ${errors['location.pincode'] ? 'border-red-500' : ''}`}
                   placeholder="Enter 6-digit pincode"
                 />
                 {errors['location.pincode'] && (

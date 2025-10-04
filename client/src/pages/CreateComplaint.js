@@ -37,20 +37,69 @@ const CreateComplaint = () => {
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState({});
   const [currentLocation, setCurrentLocation] = useState(null);
+  const [hoveredCategory, setHoveredCategory] = useState(null);
 
   const categories = [
-    { value: 'potholes', label: 'Potholes' },
-    { value: 'garbage', label: 'Garbage Collection' },
-    { value: 'street-lighting', label: 'Street Lighting' },
-    { value: 'water-supply', label: 'Water Supply' },
-    { value: 'sewage', label: 'Sewage Issues' },
-    { value: 'traffic-signals', label: 'Traffic Signals' },
-    { value: 'road-maintenance', label: 'Road Maintenance' },
-    { value: 'public-transport', label: 'Public Transport' },
-    { value: 'parks-recreation', label: 'Parks & Recreation' },
-    { value: 'noise-pollution', label: 'Noise Pollution' },
-    { value: 'air-pollution', label: 'Air Pollution' },
-    { value: 'other', label: 'Other Issues' }
+    { 
+      value: 'potholes', 
+      label: 'Potholes',
+      description: 'Report damaged road surfaces, potholes, cracks, or uneven pavement that pose safety risks to vehicles and pedestrians. Include location details and severity of damage.'
+    },
+    { 
+      value: 'garbage', 
+      label: 'Garbage Collection',
+      description: 'Report issues with waste collection services, overflowing bins, improper disposal, or areas where garbage is not being collected regularly. Help keep our city clean.'
+    },
+    { 
+      value: 'street-lighting', 
+      label: 'Street Lighting',
+      description: 'Report non-functioning street lights, dim lighting, or areas that need additional lighting for safety. Poor lighting can lead to accidents and security concerns.'
+    },
+    { 
+      value: 'water-supply', 
+      label: 'Water Supply',
+      description: 'Report water supply issues including low pressure, contaminated water, pipe leaks, or areas without proper water access. Essential for public health and daily living.'
+    },
+    { 
+      value: 'sewage', 
+      label: 'Sewage Issues',
+      description: 'Report blocked drains, sewage overflow, foul odors, or drainage problems that affect hygiene and public health. These issues require immediate attention.'
+    },
+    { 
+      value: 'traffic-signals', 
+      label: 'Traffic Signals',
+      description: 'Report malfunctioning traffic lights, missing signals, or poorly timed signals that cause traffic congestion or safety hazards at intersections.'
+    },
+    { 
+      value: 'road-maintenance', 
+      label: 'Road Maintenance',
+      description: 'Report general road maintenance issues like faded road markings, damaged signage, missing guardrails, or road construction problems.'
+    },
+    { 
+      value: 'public-transport', 
+      label: 'Public Transport',
+      description: 'Report issues with buses, trains, metro services, bus stops, or public transport infrastructure that affect daily commuters and accessibility.'
+    },
+    { 
+      value: 'parks-recreation', 
+      label: 'Parks & Recreation',
+      description: 'Report problems in public parks, playgrounds, sports facilities, or recreational areas including damaged equipment, poor maintenance, or safety concerns.'
+    },
+    { 
+      value: 'noise-pollution', 
+      label: 'Noise Pollution',
+      description: 'Report excessive noise from construction, traffic, industrial activities, or other sources that disturb residents and affect quality of life.'
+    },
+    { 
+      value: 'air-pollution', 
+      label: 'Air Pollution',
+      description: 'Report sources of air pollution including industrial emissions, vehicle exhaust, burning waste, or other activities that degrade air quality.'
+    },
+    { 
+      value: 'other', 
+      label: 'Other Issues',
+      description: 'Report any other civic issues not covered by the above categories. Provide detailed description of the problem and its impact on the community.'
+    }
   ];
 
   const priorities = [
@@ -325,7 +374,7 @@ const CreateComplaint = () => {
   return (
     <div className="min-h-screen bg-gray-50 py-8">
       <div className="container mx-auto px-4 max-w-4xl">
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 overflow-visible">
           <div className="mb-6">
             <h1 className="text-2xl font-bold text-gray-900 mb-2">
               Report a Civic Issue
@@ -348,7 +397,7 @@ const CreateComplaint = () => {
                   name="title"
                   value={formData.title}
                   onChange={handleChange}
-                  className={`input-field ${errors.title ? 'border-red-500' : ''}`}
+                  className={`input-field px-3 ${errors.title ? 'border-red-500' : ''}`}
                   placeholder="Brief description of the issue"
                 />
                 {errors.title && (
@@ -357,23 +406,77 @@ const CreateComplaint = () => {
               </div>
 
               <div>
-                <label htmlFor="category" className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
                   Category *
                 </label>
-                <select
-                  id="category"
-                  name="category"
-                  value={formData.category}
-                  onChange={handleChange}
-                  className={`input-field ${errors.category ? 'border-red-500' : ''}`}
-                >
-                  <option value="">Select a category</option>
-                  {categories.map(category => (
-                    <option key={category.value} value={category.value}>
-                      {category.label}
-                    </option>
-                  ))}
-                </select>
+                {/* Debug info - remove this later */}
+                {process.env.NODE_ENV === 'development' && (
+                  <div className="text-xs text-gray-500 mb-2">
+                    Debug: Hovered category = {hoveredCategory || 'none'}
+                  </div>
+                )}
+                <div className="relative overflow-visible">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                    {categories.map(category => (
+                      <div
+                        key={category.value}
+                        className="relative"
+                        onMouseEnter={() => {
+                          console.log('Hovering over:', category.value);
+                          setHoveredCategory(category.value);
+                        }}
+                        onMouseLeave={() => {
+                          console.log('Leaving:', category.value);
+                          setHoveredCategory(null);
+                        }}
+                      >
+                        <label className={`block cursor-pointer rounded-lg border-2 p-3 transition-all duration-200 ${
+                          formData.category === category.value
+                            ? 'border-blue-500 bg-blue-50 text-blue-700'
+                            : hoveredCategory === category.value
+                            ? 'border-purple-400 bg-purple-50 text-purple-700'
+                            : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'
+                        }`}>
+                          <input
+                            type="radio"
+                            name="category"
+                            value={category.value}
+                            checked={formData.category === category.value}
+                            onChange={handleChange}
+                            className="sr-only"
+                          />
+                          <div className="font-medium text-sm">{category.label}</div>
+                        </label>
+                        
+                        {/* Tooltip */}
+                        {hoveredCategory === category.value && (
+                          <div className="absolute z-50 w-72 p-4 mt-3 bg-black text-white text-sm rounded-lg shadow-2xl left-0 top-full">
+                            <div className="leading-relaxed">{category.description}</div>
+                            {/* Arrow */}
+                            <div className="absolute -top-2 left-4 w-3 h-3 bg-black rotate-45"></div>
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                  
+                  {/* Fallback dropdown for mobile */}
+                  <div className="mt-4 sm:hidden">
+                    <select
+                      name="category"
+                      value={formData.category}
+                      onChange={handleChange}
+                      className={`input-field px-3 ${errors.category ? 'border-red-500' : ''}`}
+                    >
+                      <option value="">Select a category</option>
+                      {categories.map(category => (
+                        <option key={category.value} value={category.value}>
+                          {category.label}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
                 {errors.category && (
                   <p className="mt-1 text-sm text-red-600">{errors.category}</p>
                 )}
@@ -390,7 +493,7 @@ const CreateComplaint = () => {
                 rows={4}
                 value={formData.description}
                 onChange={handleChange}
-                className={`input-field ${errors.description ? 'border-red-500' : ''}`}
+                className={`input-field px-3 ${errors.description ? 'border-red-500' : ''}`}
                 placeholder="Provide detailed information about the issue, including when you noticed it, how it affects the community, etc."
               />
               {errors.description && (
@@ -466,7 +569,7 @@ const CreateComplaint = () => {
                       ...prev,
                       location: { ...prev.location, address: e.target.value }
                     }))}
-                    className={`input-field ${errors.address ? 'border-red-500' : ''}`}
+                    className={`input-field px-3 ${errors.address ? 'border-red-500' : ''}`}
                     placeholder="Address will be auto-filled when you click on the map"
                   />
                   {errors.address && (
