@@ -349,8 +349,9 @@ router.get('/:id', auth, async (req, res) => {
     }
 
     // Check if user can view this complaint
-    const user = await User.findById(req.userId).select('role');
-    if (user && user.role === 'citizen' && complaint.user._id.toString() !== req.userId.toString()) {
+    // For citizens, they can only view their own complaints
+    // For admins, they can view all complaints
+    if (req.userType !== 'admin' && complaint.user._id.toString() !== req.userId.toString()) {
       return res.status(403).json({ message: 'Access denied' });
     }
 

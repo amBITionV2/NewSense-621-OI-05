@@ -26,21 +26,21 @@ const ComplaintDetails = () => {
 
   const getStatusColor = (status) => {
     switch (status) {
-      case 'open': return 'status-open';
-      case 'in-progress': return 'status-in-progress';
-      case 'resolved': return 'status-resolved';
-      case 'closed': return 'status-closed';
-      default: return 'status-open';
+      case 'open': return 'bg-yellow-100 text-yellow-800';
+      case 'in-progress': return 'bg-blue-100 text-blue-800';
+      case 'resolved': return 'bg-green-100 text-green-800';
+      case 'closed': return 'bg-gray-100 text-gray-800';
+      default: return 'bg-yellow-100 text-yellow-800';
     }
   };
 
   const getPriorityColor = (priority) => {
     switch (priority) {
-      case 'low': return 'priority-low';
-      case 'medium': return 'priority-medium';
-      case 'high': return 'priority-high';
-      case 'urgent': return 'priority-urgent';
-      default: return 'priority-medium';
+      case 'low': return 'bg-green-100 text-green-800';
+      case 'medium': return 'bg-yellow-100 text-yellow-800';
+      case 'high': return 'bg-orange-100 text-orange-800';
+      case 'urgent': return 'bg-red-100 text-red-800';
+      default: return 'bg-yellow-100 text-yellow-800';
     }
   };
 

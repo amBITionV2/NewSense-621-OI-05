@@ -116,8 +116,7 @@ router.get('/dashboard', auth, async (req, res) => {
 router.get('/complaints', auth, async (req, res) => {
   try {
     // Check if user is admin
-    const user = await User.findById(req.userId);
-    if (!user || user.role !== 'admin') {
+    if (req.userType !== 'admin') {
       return res.status(403).json({ message: 'Access denied. Admin privileges required.' });
     }
 
@@ -170,8 +169,7 @@ router.get('/complaints', auth, async (req, res) => {
 router.get('/complaints/:id', auth, async (req, res) => {
   try {
     // Check if user is admin
-    const user = await User.findById(req.userId);
-    if (!user || user.role !== 'admin') {
+    if (req.userType !== 'admin') {
       return res.status(403).json({ message: 'Access denied. Admin privileges required.' });
     }
 
@@ -198,8 +196,7 @@ router.get('/complaints/:id', auth, async (req, res) => {
 router.put('/complaints/:id/status', auth, async (req, res) => {
   try {
     // Check if user is admin
-    const user = await User.findById(req.userId);
-    if (!user || user.role !== 'admin') {
+    if (req.userType !== 'admin') {
       return res.status(403).json({ message: 'Access denied. Admin privileges required.' });
     }
 
