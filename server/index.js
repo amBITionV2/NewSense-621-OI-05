@@ -36,11 +36,32 @@ app.use(limiter);
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
-// Database connection (using mock database for demo)
-console.log('Using mock database for demo purposes');
-console.log('Demo users created:');
-console.log('- Citizen: demo@example.com / password');
-console.log('- Admin: admin@example.com / password');
+// Database connection
+if (config.MONGODB_URI && !config.MONGODB_URI.includes('localhost')) {
+  // If a remote URI is provided, prefer that
+}
+
+const connectDatabase = async () => {
+  try {
+    if (config.MONGODB_URI) {
+      await mongoose.connect(config.MONGODB_URI, {
+        useNewUrlParser: true,
+        useUnifiedTopology: true
+      });
+      console.log('Connected to MongoDB');
+    } else {
+      console.log('MONGODB_URI not set — using mock database for demo purposes');
+      console.log('Demo users created:');
+      console.log('- Citizen: demo@example.com / password');
+      console.log('- Admin: admin@example.com / password');
+    }
+  } catch (error) {
+    console.error('Failed to connect to MongoDB:', error.message);
+    console.log('Falling back to mock database');
+  }
+};
+
+connectDatabase();
 
 // Routes
 app.use('/api/auth', require('./routes/auth'));
