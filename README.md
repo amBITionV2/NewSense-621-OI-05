@@ -1,6 +1,15 @@
-# Citizen Complaint Portal
+# NewSense-621-OI-05: AI-Powered Citizen Complaint Portal
 
-An AI-powered citizen complaint management system that enables citizens to report civic issues, learn about community responsibility, and engage with local government through intelligent automation.
+An intelligent citizen complaint management system that leverages AI to automate civic issue reporting, social media engagement, and educational content generation. This project enables citizens to report civic issues with precise location mapping, automated social media posting, and continuous learning translation capabilities.
+
+## 🚀 Live Demo
+
+**Frontend**: http://localhost:3000  
+**Backend API**: http://localhost:5000
+
+### Demo Credentials
+- **Citizen**: `demo@example.com` / `password`
+- **Admin**: `admin@example.com` / `password`
 
 ## 🌟 Features
 
