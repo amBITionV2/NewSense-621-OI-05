@@ -319,7 +319,17 @@ const CreateComplaint = () => {
       });
 
       toast.success('Complaint submitted successfully!');
-      navigate(`/complaints/${response.data.complaint._id}`);
+      
+      // Extract complaint ID from response
+      const complaintId = response.data.complaint?._doc?._id || response.data.complaint?._id || response.data._id;
+      console.log('Complaint created with ID:', complaintId);
+      
+      if (complaintId) {
+        navigate(`/complaints/${complaintId}`);
+      } else {
+        console.error('No complaint ID found in response:', response.data);
+        navigate('/dashboard');
+      }
     } catch (error) {
       console.error('Submit error:', error);
       const message = error.response?.data?.message || 'Failed to submit complaint';

@@ -67,12 +67,19 @@ const Navbar = () => {
                 <NavLink to="/dashboard" icon={Home}>
                   Dashboard
                 </NavLink>
-                <NavLink to="/complaints/create" icon={Plus}>
-                  Report Issue
-                </NavLink>
-                <NavLink to="/videos" icon={Video}>
-                  Learn
-                </NavLink>
+                
+                {/* Show Report Issue and Learn only for non-admin users */}
+                {user?.role !== 'admin' && (
+                  <>
+                    <NavLink to="/complaints/create" icon={Plus}>
+                      Report Issue
+                    </NavLink>
+                    <NavLink to="/videos" icon={Video}>
+                      Learn
+                    </NavLink>
+                  </>
+                )}
+                
                 <NavLink to="/community" icon={Users}>
                   Community
                 </NavLink>
@@ -150,20 +157,27 @@ const Navbar = () => {
                   >
                     Dashboard
                   </NavLink>
-                  <NavLink 
-                    to="/complaints/create" 
-                    icon={Plus}
-                    onClick={() => setIsMenuOpen(false)}
-                  >
-                    Report Issue
-                  </NavLink>
-                  <NavLink 
-                    to="/videos" 
-                    icon={Video}
-                    onClick={() => setIsMenuOpen(false)}
-                  >
-                    Learn
-                  </NavLink>
+                  
+                  {/* Show Report Issue and Learn only for non-admin users */}
+                  {user?.role !== 'admin' && (
+                    <>
+                      <NavLink 
+                        to="/complaints/create" 
+                        icon={Plus}
+                        onClick={() => setIsMenuOpen(false)}
+                      >
+                        Report Issue
+                      </NavLink>
+                      <NavLink 
+                        to="/videos" 
+                        icon={Video}
+                        onClick={() => setIsMenuOpen(false)}
+                      >
+                        Learn
+                      </NavLink>
+                    </>
+                  )}
+                  
                   <NavLink 
                     to="/community" 
                     icon={Users}

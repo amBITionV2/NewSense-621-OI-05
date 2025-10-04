@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import axios from 'axios';
 import { 
-  Plus, 
+  Plus,
   MapPin, 
   Clock, 
   CheckCircle, 
@@ -175,46 +175,52 @@ const Dashboard = () => {
         </div>
 
         {/* Quick Actions with Glassmorphism */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-12">
-          <Link
-            to="/complaints/create"
-            className="group relative overflow-hidden bg-white/70 backdrop-blur-lg rounded-2xl shadow-xl border border-white/20 p-6 hover:shadow-2xl hover:scale-105 transition-all duration-300 hover:bg-gradient-to-br hover:from-blue-50 hover:to-purple-50"
-            style={{animationDelay: '0.1s'}}
-          >
-            <div className="absolute inset-0 bg-gradient-to-br from-blue-500/10 to-purple-500/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-            <div className="relative z-10 flex items-center space-x-4">
-              <div className="w-14 h-14 bg-gradient-to-br from-blue-500 to-purple-600 rounded-xl flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform duration-300">
-                <Plus className="w-7 h-7 text-white" />
-              </div>
-              <div>
-                <h3 className="font-bold text-gray-900 text-lg group-hover:text-blue-600 transition-colors duration-300">Report Issue</h3>
-                <p className="text-sm text-gray-600 group-hover:text-gray-700">Submit a new complaint</p>
-              </div>
-            </div>
-            <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-              <Zap className="w-5 h-5 text-yellow-500 animate-bounce" />
-            </div>
-          </Link>
+        <div className={`grid grid-cols-1 gap-6 mb-12 ${user?.role !== 'admin' ? 'md:grid-cols-4' : 'md:grid-cols-2'}`}>
 
-          <Link
-            to="/videos"
-            className="group relative overflow-hidden bg-white/70 backdrop-blur-lg rounded-2xl shadow-xl border border-white/20 p-6 hover:shadow-2xl hover:scale-105 transition-all duration-300 hover:bg-gradient-to-br hover:from-green-50 hover:to-emerald-50"
-            style={{animationDelay: '0.2s'}}
-          >
-            <div className="absolute inset-0 bg-gradient-to-br from-green-500/10 to-emerald-500/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-            <div className="relative z-10 flex items-center space-x-4">
-              <div className="w-14 h-14 bg-gradient-to-br from-green-500 to-emerald-600 rounded-xl flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform duration-300">
-                <Video className="w-7 h-7 text-white" />
-              </div>
-              <div>
-                <h3 className="font-bold text-gray-900 text-lg group-hover:text-green-600 transition-colors duration-300">Learn</h3>
-                <p className="text-sm text-gray-600 group-hover:text-gray-700">Educational videos</p>
-              </div>
-            </div>
-            <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-              <Star className="w-5 h-5 text-yellow-500 animate-bounce" />
-            </div>
-          </Link>
+          {/* Show Report Issue and Learn cards only for non-admin users */}
+          {user?.role !== 'admin' && (
+            <>
+              <Link
+                to="/complaints/create"
+                className="group relative overflow-hidden bg-white/70 backdrop-blur-lg rounded-2xl shadow-xl border border-white/20 p-6 hover:shadow-2xl hover:scale-105 transition-all duration-300 hover:bg-gradient-to-br hover:from-blue-50 hover:to-purple-50"
+                style={{animationDelay: '0.1s'}}
+              >
+                <div className="absolute inset-0 bg-gradient-to-br from-blue-500/10 to-purple-500/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                <div className="relative z-10 flex items-center space-x-4">
+                  <div className="w-14 h-14 bg-gradient-to-br from-blue-500 to-purple-600 rounded-xl flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform duration-300">
+                    <Plus className="w-7 h-7 text-white" />
+                  </div>
+                  <div>
+                    <h3 className="font-bold text-gray-900 text-lg group-hover:text-blue-600 transition-colors duration-300">Report Issue</h3>
+                    <p className="text-sm text-gray-600 group-hover:text-gray-700">Submit a new complaint</p>
+                  </div>
+                </div>
+                <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                  <Zap className="w-5 h-5 text-yellow-500 animate-bounce" />
+                </div>
+              </Link>
+
+              <Link
+                to="/videos"
+                className="group relative overflow-hidden bg-white/70 backdrop-blur-lg rounded-2xl shadow-xl border border-white/20 p-6 hover:shadow-2xl hover:scale-105 transition-all duration-300 hover:bg-gradient-to-br hover:from-green-50 hover:to-emerald-50"
+                style={{animationDelay: '0.2s'}}
+              >
+                <div className="absolute inset-0 bg-gradient-to-br from-green-500/10 to-emerald-500/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                <div className="relative z-10 flex items-center space-x-4">
+                  <div className="w-14 h-14 bg-gradient-to-br from-green-500 to-emerald-600 rounded-xl flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform duration-300">
+                    <Video className="w-7 h-7 text-white" />
+                  </div>
+                  <div>
+                    <h3 className="font-bold text-gray-900 text-lg group-hover:text-green-600 transition-colors duration-300">Learn</h3>
+                    <p className="text-sm text-gray-600 group-hover:text-gray-700">Educational videos</p>
+                  </div>
+                </div>
+                <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                  <Star className="w-5 h-5 text-yellow-500 animate-bounce" />
+                </div>
+              </Link>
+            </>
+          )}
 
           <Link
             to="/translation"
@@ -270,7 +276,7 @@ const Dashboard = () => {
                 </div>
                 <div>
                   <h3 className="text-2xl font-bold text-gray-900">{user?.name || 'Citizen'}</h3>
-                  <p className="text-gray-600 capitalize">{user?.role || 'citizen'} • {user?.location?.city || 'Your City'}</p>
+                  <p className="text-gray-600 capitalize">{user?.role || 'user'} • {user?.location?.city || 'Your City'}</p>
                   <p className="text-sm text-gray-500">Member since {user?.createdAt ? new Date(user.createdAt).toLocaleDateString() : 'Recently'}</p>
                 </div>
               </div>
@@ -429,13 +435,15 @@ const Dashboard = () => {
                 </div>
                 <h3 className="text-2xl font-bold text-gray-900 mb-3">No complaints yet</h3>
                 <p className="text-gray-600 mb-8 max-w-md mx-auto">Start by reporting an issue in your community and help make it a better place for everyone.</p>
-                <Link
-                  to="/complaints/create"
-                  className="inline-flex items-center space-x-2 bg-gradient-to-r from-blue-600 to-purple-600 text-white px-8 py-4 rounded-xl font-semibold hover:shadow-lg hover:scale-105 transition-all duration-300"
-                >
-                  <Plus className="w-5 h-5" />
-                  <span>Report Your First Issue</span>
-                </Link>
+                {user?.role !== 'admin' && (
+                  <Link
+                    to="/complaints/create"
+                    className="inline-flex items-center space-x-2 bg-gradient-to-r from-blue-600 to-purple-600 text-white px-8 py-4 rounded-xl font-semibold hover:shadow-lg hover:scale-105 transition-all duration-300"
+                  >
+                    <Plus className="w-5 h-5" />
+                    <span>Report Your First Issue</span>
+                  </Link>
+                )}
               </div>
             ) : (
               <div className="space-y-6">
@@ -501,14 +509,22 @@ const Dashboard = () => {
                 Discover daily educational content about civic responsibility and community awareness. 
                 Learn how to be an active citizen and make a positive impact in your community.
               </p>
-              <Link
-                to="/videos"
-                className="group inline-flex items-center space-x-3 bg-white/20 backdrop-blur-lg text-white px-6 py-3 rounded-xl font-semibold hover:bg-white/30 hover:scale-105 transition-all duration-300 border border-white/30"
-              >
-                <Video className="w-5 h-5 group-hover:scale-110 transition-transform duration-300" />
-                <span>Watch Now</span>
-                <TrendingUp className="w-4 h-4 group-hover:translate-x-1 transition-transform duration-300" />
-              </Link>
+              {user?.role !== 'admin' ? (
+                <Link
+                  to="/videos"
+                  className="group inline-flex items-center space-x-3 bg-white/20 backdrop-blur-lg text-white px-6 py-3 rounded-xl font-semibold hover:bg-white/30 hover:scale-105 transition-all duration-300 border border-white/30"
+                >
+                  <Video className="w-5 h-5 group-hover:scale-110 transition-transform duration-300" />
+                  <span>Watch Now</span>
+                  <TrendingUp className="w-4 h-4 group-hover:translate-x-1 transition-transform duration-300" />
+                </Link>
+              ) : (
+                <div className="group inline-flex items-center space-x-3 bg-white/20 backdrop-blur-lg text-white px-6 py-3 rounded-xl font-semibold border border-white/30 opacity-75">
+                  <Languages className="w-5 h-5" />
+                  <span>Educational content coming soon</span>
+                  <Star className="w-4 h-4" />
+                </div>
+              )}
             </div>
           </div>
 

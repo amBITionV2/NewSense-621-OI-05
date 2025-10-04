@@ -62,6 +62,7 @@ const handleAdminRegistration = async (req, res, adminData) => {
       const admin = await Admin.create({
         name,
         email,
+        role: 'admin',
         password,
         phone,
         alternateContact,
@@ -117,6 +118,7 @@ const handleAdminRegistration = async (req, res, adminData) => {
     const admin = mockDB.createAdmin({
       name,
       email,
+      role: 'admin',
       password: hashedPassword,
       phone,
       alternateContact,
