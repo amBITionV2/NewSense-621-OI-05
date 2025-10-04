@@ -65,15 +65,16 @@ const Footer = () => {
             <div className="space-y-3">
               <div className="flex items-center space-x-3">
                 <Mail size={16} className="text-gray-400" />
-                <span className="text-gray-300">support@citizenportal.com</span>
+                <span className="text-gray-300">methlygupta7@gmail.com</span>
               </div>
               <div className="flex items-center space-x-3">
                 <Phone size={16} className="text-gray-400" />
-                <span className="text-gray-300">+1 (555) 123-4567</span>
+                <span className="text-gray-300">7413070828</span>
               </div>
               <div className="flex items-center space-x-3">
                 <MapPin size={16} className="text-gray-400" />
-                <span className="text-gray-300">City Hall, Main Street</span>
+                <span className="text-gray-300"> Krishna Rajendra Rd, Parvathipuram, Vishweshwarapura, 
+                  Basavanagudi, Bengaluru, Karnataka 560004</span>
               </div>
             </div>
           </div>

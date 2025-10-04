@@ -99,7 +99,7 @@ const Login = () => {
                   autoComplete="email"
                   value={formData.email}
                   onChange={handleChange}
-                  className={`input-field pl-10 ${errors.email ? 'border-red-500' : ''}`}
+                  className={`input-field pl-14 ${errors.email ? 'border-red-500' : ''}`}
                   placeholder="Enter your email"
                 />
               </div>
@@ -123,7 +123,7 @@ const Login = () => {
                   autoComplete="current-password"
                   value={formData.password}
                   onChange={handleChange}
-                  className={`input-field pl-10 pr-10 ${errors.password ? 'border-red-500' : ''}`}
+                  className={`input-field pl-14 pr-12 ${errors.password ? 'border-red-500' : ''}`}
                   placeholder="Enter your password"
                 />
                 <button
