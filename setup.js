@@ -4,7 +4,7 @@ const { execSync } = require('child_process');
 
 console.log('🚀 Setting up Citizen Complaint Portal...\n');
 
-// Check if Node.js version is compatible
+// Check if Node.js version is compatiblee
 const nodeVersion = process.version;
 const majorVersion = parseInt(nodeVersion.slice(1).split('.')[0]);
 
