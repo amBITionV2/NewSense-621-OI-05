@@ -265,4 +265,4 @@ For support, email support@citizenportal.com or create an issue in the repositor
 
 ---
 
-Built with ❤️ for better communities
+Built with ❤️ for better communities 
