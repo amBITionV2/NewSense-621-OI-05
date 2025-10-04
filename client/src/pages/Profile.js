@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { User, Mail, Phone, MapPin, Settings, Save } from 'lucide-react';
+import { User, MapPin, Settings, Save } from 'lucide-react';
 import LoadingSpinner from '../components/LoadingSpinner';
 
 const Profile = () => {

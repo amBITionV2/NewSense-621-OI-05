@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import axios from 'axios';
-import { MapPin, Clock, User, Camera, ExternalLink } from 'lucide-react';
+import { MapPin, Clock, User, ExternalLink } from 'lucide-react';
 import LoadingSpinner from '../components/LoadingSpinner';
 
 const ComplaintDetails = () => {

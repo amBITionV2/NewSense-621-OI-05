@@ -7,13 +7,9 @@ import config from '../config';
 import { 
   MapPin, 
   Camera, 
-  Upload, 
   X, 
-  AlertCircle,
-  CheckCircle,
   Loader
 } from 'lucide-react';
-import LoadingSpinner from '../components/LoadingSpinner';
 
 const CreateComplaint = () => {
   const { user } = useAuth();

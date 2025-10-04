@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import axios from 'axios';
 import { Play, Clock, Users, ThumbsUp, Share2 } from 'lucide-react';
 import LoadingSpinner from '../components/LoadingSpinner';
 

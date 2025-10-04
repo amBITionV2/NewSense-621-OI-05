@@ -1,4 +1,6 @@
 import React, { useState } from 'react';
+import axios from 'axios';
+import toast from 'react-hot-toast';
 import { Languages, ArrowRightLeft, ThumbsUp, ThumbsDown, RotateCcw } from 'lucide-react';
 import LoadingSpinner from '../components/LoadingSpinner';
 
