@@ -63,7 +63,7 @@ const CreateComplaint = () => {
   // Initialize Google Maps
   useEffect(() => {
     const initMap = () => {
-      if (window.google && window.google.maps) {
+      if (window.google && window.google.maps && window.google.maps.Map) {
         const defaultLocation = { lat: 28.6139, lng: 77.2090 }; // Delhi coordinates
         
         const mapInstance = new window.google.maps.Map(mapRef.current, {
@@ -132,6 +132,17 @@ const CreateComplaint = () => {
             }
           );
         }
+      } else {
+        console.warn('Google Maps is not available. Location features will be disabled.');
+        // Hide the map container and show a message
+        const mapContainer = document.getElementById('map');
+        if (mapContainer) {
+          mapContainer.style.display = 'none';
+          const mapError = document.createElement('div');
+          mapError.className = 'text-center p-4 bg-yellow-50 border border-yellow-200 rounded-lg';
+          mapError.innerHTML = '<p class="text-yellow-800">Map unavailable. You can still report issues without location.</p>';
+          mapContainer.parentNode.insertBefore(mapError, mapContainer);
+        }
       }
     };
 
@@ -140,6 +151,18 @@ const CreateComplaint = () => {
       const script = document.createElement('script');
       script.src = `https://maps.googleapis.com/maps/api/js?key=${config.GOOGLE_MAPS_API_KEY}&libraries=places`;
       script.onload = initMap;
+      script.onerror = () => {
+        console.warn('Google Maps failed to load. Location features will be disabled.');
+        // Hide the map container and show a message
+        const mapContainer = document.getElementById('map');
+        if (mapContainer) {
+          mapContainer.style.display = 'none';
+          const mapError = document.createElement('div');
+          mapError.className = 'text-center p-4 bg-yellow-50 border border-yellow-200 rounded-lg';
+          mapError.innerHTML = '<p class="text-yellow-800">Map unavailable. You can still report issues without location.</p>';
+          mapContainer.parentNode.insertBefore(mapError, mapContainer);
+        }
+      };
       document.head.appendChild(script);
     } else {
       initMap();
@@ -244,11 +267,13 @@ const CreateComplaint = () => {
       newErrors.category = 'Please select a category';
     }
 
-    if (!formData.location.coordinates.lat || !formData.location.coordinates.lng) {
+    // Only require location if map is available
+    if (window.google && window.google.maps && (!formData.location.coordinates.lat || !formData.location.coordinates.lng)) {
       newErrors.location = 'Please select a location on the map';
     }
 
-    if (!formData.location.address.trim()) {
+    // Only require address if map is available
+    if (window.google && window.google.maps && !formData.location.address.trim()) {
       newErrors.address = 'Address is required';
     }
 
