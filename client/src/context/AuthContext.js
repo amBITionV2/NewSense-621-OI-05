@@ -104,7 +104,7 @@ export const AuthProvider = ({ children }) => {
       });
       
       toast.success('Login successful!');
-      return { success: true };
+      return { success: true, user: response.data.user };
     } catch (error) {
       console.error('Login error:', error);
       dispatch({ type: 'LOGIN_FAILURE' });
@@ -125,10 +125,14 @@ export const AuthProvider = ({ children }) => {
       });
       
       toast.success('Registration successful!');
-      return { success: true };
+      return { success: true, user: response.data.user };
     } catch (error) {
       dispatch({ type: 'LOGIN_FAILURE' });
-      const message = error.response?.data?.message || 'Registration failed';
+      console.error('Registration error details:', error);
+      console.error('Error response:', error.response?.data);
+      console.error('Error status:', error.response?.status);
+      
+      const message = error.response?.data?.message || error.message || 'Registration failed';
       toast.error(message);
       return { success: false, error: message };
     }

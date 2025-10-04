@@ -39,11 +39,6 @@ app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 // Serve static files from uploads directory
 app.use('/uploads', express.static('uploads'));
 
-// Database connection
-if (config.MONGODB_URI && !config.MONGODB_URI.includes('localhost')) {
-  // If a remote URI is provided, prefer that
-}
-
 const connectDatabase = async () => {
   try {
     if (config.MONGODB_URI) {
@@ -51,7 +46,7 @@ const connectDatabase = async () => {
         useNewUrlParser: true,
         useUnifiedTopology: true
       });
-      console.log('Connected to MongoDB');
+      console.log('✅ Connected to MongoDB at:', config.MONGODB_URI);
     } else {
       console.log('MONGODB_URI not set — using mock database for demo purposes');
       console.log('Demo users created:');
@@ -59,7 +54,7 @@ const connectDatabase = async () => {
       console.log('- Admin: admin@example.com / password');
     }
   } catch (error) {
-    console.error('Failed to connect to MongoDB:', error.message);
+    console.error('❌ Failed to connect to MongoDB:', error.message);
     console.log('Falling back to mock database');
   }
 };
@@ -69,8 +64,8 @@ connectDatabase();
 // Routes
 app.use('/api/auth', require('./routes/auth'));
 app.use('/api/complaints', require('./routes/complaints-simple'));
+app.use('/api/admin', require('./routes/admin'));
 // app.use('/api/ai', require('./routes/ai'));
-// app.use('/api/admin', require('./routes/admin'));
 
 // Socket.io for real-time updates
 io.on('connection', (socket) => {

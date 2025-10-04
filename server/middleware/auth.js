@@ -2,12 +2,14 @@ const jwt = require('jsonwebtoken');
 const mockDB = require('../mockDatabase');
 const config = require('../config.dev');
 
-let User;
+let User, Admin;
 try {
   User = require('../models/User');
+  Admin = require('../models/Admin');
 } catch (e) {
   // if model can't be loaded, we'll fallback to mockDB
   User = null;
+  Admin = null;
 }
 
 const auth = async (req, res, next) => {
@@ -21,7 +23,12 @@ const auth = async (req, res, next) => {
     const decoded = jwt.verify(token, config.JWT_SECRET);
 
     let user = null;
-    if (User) {
+    let userType = decoded.userType || 'user';
+
+    // Check if it's an admin first
+    if (userType === 'admin' && Admin) {
+      user = await Admin.findById(decoded.userId).lean();
+    } else if (User) {
       user = await User.findById(decoded.userId).lean();
     }
 
@@ -36,6 +43,7 @@ const auth = async (req, res, next) => {
 
     req.userId = user._id;
     req.user = user;
+    req.userType = userType;
     next();
   } catch (error) {
     console.error('Auth middleware error:', error);

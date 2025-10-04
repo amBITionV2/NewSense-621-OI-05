@@ -6,18 +6,163 @@ const mockDB = require('../mockDatabase');
 const { auth } = require('../middleware/auth');
 const config = require('../config.dev');
 
-let User;
+let User, Admin;
 try {
   User = require('../models/User');
+  Admin = require('../models/Admin');
 } catch (e) {
   User = null;
+  Admin = null;
 }
 
 const router = express.Router();
 
 // Generate JWT token
-const generateToken = (userId) => {
-  return jwt.sign({ userId }, config.JWT_SECRET, { expiresIn: '7d' });
+const generateToken = (userId, userType = 'user') => {
+  return jwt.sign({ userId, userType }, config.JWT_SECRET, { expiresIn: '7d' });
+};
+
+// Handle admin registration
+const handleAdminRegistration = async (req, res, adminData) => {
+  try {
+    const { 
+      name, email, password, phone, alternateContact, location, 
+      aadhaarNumber, dateOfBirth, gender, fatherName, motherName, 
+      governmentIdNumber, governmentIdDocument, citizenshipProofDocument, citizenshipProofType 
+    } = adminData;
+
+    // Provide default values for optional fields
+    const aadhaarDoc = governmentIdDocument || '';
+    const citizenshipDoc = citizenshipProofDocument || '';
+    const citizenshipType = citizenshipProofType || '';
+    
+    if (Admin) {
+      // Check if admin already exists
+      const existingAdmin = await Admin.findOne({ email });
+      if (existingAdmin) {
+        return res.status(400).json({ message: 'Admin already exists with this email' });
+      }
+
+      // Ensure location has proper structure
+      const adminLocation = {
+        address: location?.address || '',
+        city: location?.city || '',
+        state: location?.state || '',
+        pincode: location?.pincode || '',
+        country: location?.country || ''
+      };
+
+      console.log('Creating admin with data:', {
+        name,
+        email,
+        governmentIdNumber,
+        location: adminLocation
+      });
+
+      const admin = await Admin.create({
+        name,
+        email,
+        password,
+        phone,
+        alternateContact,
+        location: adminLocation,
+        aadhaarNumber,
+        aadhaarDocument: aadhaarDoc,
+        dateOfBirth,
+        gender,
+        fatherName,
+        motherName,
+        governmentIdNumber,
+        governmentIdDocument: aadhaarDoc,
+        citizenshipProofDocument: citizenshipDoc,
+        citizenshipProofType: citizenshipType,
+        preferences: {
+          language: 'en',
+          notifications: {
+            email: true,
+            sms: false,
+            push: true
+          }
+        },
+        isActive: true,
+        verificationStatus: 'pending',
+        lastLogin: new Date()
+      });
+
+      console.log('✅ Admin created successfully:', {
+        id: admin._id,
+        name: admin.name,
+        email: admin.email,
+        governmentIdNumber: admin.governmentIdNumber
+      });
+
+      const token = generateToken(admin._id, 'admin');
+      return res.status(201).json({ 
+        message: 'Admin registered successfully', 
+        token, 
+        user: { 
+          id: admin._id, 
+          name: admin.name, 
+          email: admin.email, 
+          role: 'admin',
+          userType: 'admin'
+        } 
+      });
+    }
+
+    // Fallback to mockDB for admin
+    const salt = await bcrypt.genSalt(10);
+    const hashedPassword = await bcrypt.hash(password, salt);
+
+    const admin = mockDB.createAdmin({
+      name,
+      email,
+      password: hashedPassword,
+      phone,
+      alternateContact,
+      location,
+      aadhaarNumber,
+      aadhaarDocument: aadhaarDoc,
+      dateOfBirth,
+      gender,
+      fatherName,
+      motherName,
+      governmentIdNumber,
+      governmentIdDocument: aadhaarDoc,
+      citizenshipProofDocument: citizenshipDoc,
+      citizenshipProofType: citizenshipType,
+      preferences: {
+        language: 'en',
+        notifications: {
+          email: true,
+          sms: false,
+          push: true
+        }
+      },
+      isActive: true,
+      verificationStatus: 'pending',
+      lastLogin: new Date()
+    });
+
+    const token = generateToken(admin._id, 'admin');
+    res.status(201).json({ 
+      message: 'Admin registered successfully', 
+      token, 
+      user: { 
+        id: admin._id, 
+        name: admin.name, 
+        email: admin.email, 
+        role: 'admin',
+        userType: 'admin'
+      } 
+    });
+  } catch (error) {
+    console.error('Admin registration error:', error);
+    res.status(500).json({ 
+      message: 'Server error during admin registration',
+      error: error.message 
+    });
+  }
 };
 
 // @route   POST /api/auth/register
@@ -27,24 +172,57 @@ router.post('/register', [
   body('name').trim().isLength({ min: 2 }).withMessage('Name must be at least 2 characters'),
   body('email').isEmail().normalizeEmail().withMessage('Please provide a valid email'),
   body('password').isLength({ min: 6 }).withMessage('Password must be at least 6 characters'),
-  body('phone').optional().isMobilePhone().withMessage('Please provide a valid phone number')
+  body('phone').optional().isString().withMessage('Please provide a valid phone number')
 ], async (req, res) => {
   try {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
+      console.log('Validation errors:', errors.array());
       return res.status(400).json({ errors: errors.array() });
     }
+    
+    console.log('Registration request received:', {
+      body: req.body,
+      hasName: !!req.body.name,
+      hasEmail: !!req.body.email,
+      hasPassword: !!req.body.password,
+      hasPhone: !!req.body.phone,
+      hasRole: !!req.body.role,
+      hasGovernmentId: !!req.body.governmentIdNumber
+    });
 
     const { 
       name, email, password, phone, alternateContact, location,
       aadhaarNumber, dateOfBirth, gender, fatherName, motherName,
       caste, religion, occupation, salary, hasIncome, languagesSpoken,
       nativePlace, residenceType, governmentIdNumber,
-      aadhaarDocument, governmentIdDocument, citizenshipProofDocument, citizenshipProofType
+      aadhaarDocument, governmentIdDocument, citizenshipProofDocument, citizenshipProofType,
+      role: selectedRole
     } = req.body;
     
-    // Determine role based on presence of government ID
-    const role = governmentIdNumber ? 'admin' : 'citizen';
+    // Determine role - use selectedRole if provided, otherwise check government ID
+    const role = selectedRole || (governmentIdNumber ? 'admin' : 'citizen');
+    
+    console.log('Registration attempt:', { 
+      email, 
+      selectedRole, 
+      governmentIdNumber, 
+      determinedRole: role 
+    });
+    
+    // Validate admin registration requirements
+    if (role === 'admin' && !governmentIdNumber) {
+      return res.status(400).json({ message: 'Government ID number is required for admin registration' });
+    }
+
+    // Handle admin registration separately
+    if (role === 'admin') {
+      return handleAdminRegistration(req, res, {
+        name, email, password, phone, alternateContact, location,
+        aadhaarNumber, dateOfBirth, gender, fatherName, motherName,
+        governmentIdNumber, governmentIdDocument, citizenshipProofDocument, citizenshipProofType
+      });
+    }
 
     // Check if user already exists
     if (User) {
@@ -53,13 +231,30 @@ router.post('/register', [
         return res.status(400).json({ message: 'User already exists with this email' });
       }
 
+      // Ensure location has proper structure
+      const userLocation = {
+        address: location?.address || '',
+        city: location?.city || '',
+        state: location?.state || '',
+        pincode: location?.pincode || '',
+        country: location?.country || ''
+      };
+
+      console.log('Creating user with data:', {
+        name,
+        email,
+        role,
+        governmentIdNumber,
+        location: userLocation
+      });
+
       const user = await User.create({
         name,
         email,
         password,
         phone,
         alternateContact,
-        location,
+        location: userLocation,
         role,
         aadhaarNumber,
         aadhaarDocument,
@@ -92,6 +287,13 @@ router.post('/register', [
         lastLogin: new Date()
       });
 
+      console.log('✅ User created successfully:', {
+        id: user._id,
+        name: user.name,
+        email: user.email,
+        role: user.role
+      });
+
       const token = generateToken(user._id);
       return res.status(201).json({ message: 'User registered successfully', token, user: { id: user._id, name: user.name, email: user.email, role: user.role } });
     }
@@ -111,7 +313,7 @@ router.post('/register', [
       password: hashedPassword,
       phone,
       alternateContact,
-      location,
+      location: userLocation,
       role,
       aadhaarNumber,
       aadhaarDocument,
@@ -148,7 +350,11 @@ router.post('/register', [
     res.status(201).json({ message: 'User registered successfully', token, user: { id: user._id, name: user.name, email: user.email, role: user.role } });
   } catch (error) {
     console.error('Registration error:', error);
-    res.status(500).json({ message: 'Server error during registration' });
+    console.error('Error stack:', error.stack);
+    res.status(500).json({ 
+      message: 'Server error during registration',
+      error: error.message 
+    });
   }
 });
 
@@ -167,6 +373,33 @@ router.post('/login', [
 
     const { email, password } = req.body;
 
+    // Check if it's an admin login first
+    if (Admin) {
+      const admin = await Admin.findOne({ email });
+      if (admin) {
+        const isMatch = await admin.comparePassword(password);
+        if (isMatch) {
+          admin.lastLogin = new Date();
+          await admin.save();
+
+          const token = generateToken(admin._id, 'admin');
+          return res.json({ 
+            message: 'Admin login successful', 
+            token, 
+            user: { 
+              id: admin._id, 
+              name: admin.name, 
+              email: admin.email, 
+              role: 'admin',
+              userType: 'admin',
+              location: admin.location 
+            } 
+          });
+        }
+      }
+    }
+
+    // Check regular users
     if (User) {
       const user = await User.findOne({ email });
       if (!user) {
@@ -181,7 +414,7 @@ router.post('/login', [
       user.lastLogin = new Date();
       await user.save();
 
-      const token = generateToken(user._id);
+      const token = generateToken(user._id, 'user');
       return res.json({ message: 'Login successful', token, user: { id: user._id, name: user.name, email: user.email, role: user.role, location: user.location } });
     }
 
@@ -211,6 +444,15 @@ router.post('/login', [
 // @access  Private
 router.get('/me', auth, async (req, res) => {
   try {
+    // Check if it's an admin first
+    if (req.userType === 'admin' && Admin) {
+      const admin = await Admin.findById(req.userId).lean();
+      if (!admin) return res.status(404).json({ message: 'Admin not found' });
+      const { password, ...adminWithoutPassword } = admin;
+      return res.json({ user: adminWithoutPassword });
+    }
+
+    // Check regular users
     if (User) {
       const user = await User.findById(req.userId).lean();
       if (!user) return res.status(404).json({ message: 'User not found' });

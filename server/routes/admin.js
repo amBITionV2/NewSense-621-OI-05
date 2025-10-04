@@ -1,62 +1,75 @@
 const express = require('express');
-const { body, validationResult } = require('express-validator');
-const { adminAuth } = require('../middleware/auth');
-const Complaint = require('../models/Complaint');
+const { auth } = require('../middleware/auth');
 const User = require('../models/User');
-const EducationalVideo = require('../models/EducationalVideo');
-const { getVideoAnalytics } = require('../services/educationalVideoService');
-const { getTranslationStats } = require('../services/translationService');
+const Admin = require('../models/Admin');
+const Complaint = require('../models/Complaint');
 
 const router = express.Router();
 
 // @route   GET /api/admin/dashboard
-// @desc    Get admin dashboard statistics
-// @access  Private (Admin)
-router.get('/dashboard', adminAuth, async (req, res) => {
+// @desc    Get admin dashboard data
+// @access  Private (Admin only)
+router.get('/dashboard', auth, async (req, res) => {
   try {
-    const [
-      totalComplaints,
-      openComplaints,
-      resolvedComplaints,
-      totalUsers,
-      activeUsers,
-      totalVideos,
-      videoViews
-    ] = await Promise.all([
-      Complaint.countDocuments(),
-      Complaint.countDocuments({ status: { $in: ['open', 'in-progress'] } }),
-      Complaint.countDocuments({ status: { $in: ['resolved', 'closed'] } }),
-      User.countDocuments(),
-      User.countDocuments({ isActive: true }),
-      EducationalVideo.countDocuments({ isPublished: true }),
-      EducationalVideo.aggregate([
-        { $match: { isPublished: true } },
-        { $group: { _id: null, totalViews: { $sum: '$views' } } }
-      ])
-    ]);
+    // Check if user is admin
+    if (req.userType !== 'admin') {
+      return res.status(403).json({ message: 'Access denied. Admin privileges required.' });
+    }
 
-    // Recent complaints
+    // Get complaint statistics
+    const totalComplaints = await Complaint.countDocuments();
+    const openComplaints = await Complaint.countDocuments({ status: 'open' });
+    const inProgressComplaints = await Complaint.countDocuments({ status: 'in-progress' });
+    const resolvedComplaints = await Complaint.countDocuments({ status: 'resolved' });
+    const closedComplaints = await Complaint.countDocuments({ status: 'closed' });
+    
+    const resolutionRate = totalComplaints > 0 ? 
+      Math.round(((resolvedComplaints + closedComplaints) / totalComplaints) * 100) : 0;
+
+    // Get user statistics
+    const totalUsers = await User.countDocuments();
+    const activeUsers = await User.countDocuments({ isActive: true });
+    const adminUsers = await Admin.countDocuments();
+    const citizenUsers = await User.countDocuments({ role: 'citizen' });
+
+    // Get recent complaints
     const recentComplaints = await Complaint.find()
       .populate('user', 'name email')
       .sort({ createdAt: -1 })
-      .limit(10);
+      .limit(10)
+      .lean();
 
-    // Category-wise complaint distribution
+    // Get category statistics
     const categoryStats = await Complaint.aggregate([
       {
         $group: {
           _id: '$category',
-          count: { $sum: 1 },
-          resolved: {
-            $sum: { $cond: [{ $in: ['$status', ['resolved', 'closed']] }, 1, 0] }
-          }
+          count: { $sum: 1 }
         }
       },
       { $sort: { count: -1 } }
     ]);
 
-    // Monthly complaint trends
+    // Get complaints by status
+    const statusStats = await Complaint.aggregate([
+      {
+        $group: {
+          _id: '$status',
+          count: { $sum: 1 }
+        }
+      }
+    ]);
+
+    // Get monthly complaint trends (last 6 months)
+    const sixMonthsAgo = new Date();
+    sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);
+    
     const monthlyTrends = await Complaint.aggregate([
+      {
+        $match: {
+          createdAt: { $gte: sixMonthsAgo }
+        }
+      },
       {
         $group: {
           _id: {
@@ -66,8 +79,7 @@ router.get('/dashboard', adminAuth, async (req, res) => {
           count: { $sum: 1 }
         }
       },
-      { $sort: { '_id.year': -1, '_id.month': -1 } },
-      { $limit: 12 }
+      { $sort: { '_id.year': 1, '_id.month': 1 } }
     ]);
 
     res.json({
@@ -75,299 +87,276 @@ router.get('/dashboard', adminAuth, async (req, res) => {
         complaints: {
           total: totalComplaints,
           open: openComplaints,
+          inProgress: inProgressComplaints,
           resolved: resolvedComplaints,
-          resolutionRate: totalComplaints > 0 ? (resolvedComplaints / totalComplaints * 100).toFixed(1) : 0
+          closed: closedComplaints,
+          resolutionRate
         },
         users: {
           total: totalUsers,
-          active: activeUsers
-        },
-        videos: {
-          total: totalVideos,
-          totalViews: videoViews[0]?.totalViews || 0
+          active: activeUsers,
+          admins: adminUsers,
+          citizens: citizenUsers
         }
       },
       recentComplaints,
       categoryStats,
+      statusStats,
       monthlyTrends
     });
   } catch (error) {
-    console.error('Dashboard error:', error);
-    res.status(500).json({ message: 'Failed to fetch dashboard data' });
+    console.error('Admin dashboard error:', error);
+    res.status(500).json({ message: 'Server error' });
   }
 });
 
 // @route   GET /api/admin/complaints
-// @desc    Get all complaints for admin
-// @access  Private (Admin)
-router.get('/complaints', adminAuth, async (req, res) => {
+// @desc    Get all complaints with filtering and pagination
+// @access  Private (Admin only)
+router.get('/complaints', auth, async (req, res) => {
   try {
-    const {
-      page = 1,
-      limit = 20,
-      status,
-      category,
-      priority,
-      assignedTo,
-      sortBy = 'createdAt',
-      sortOrder = 'desc'
-    } = req.query;
+    // Check if user is admin
+    const user = await User.findById(req.userId);
+    if (!user || user.role !== 'admin') {
+      return res.status(403).json({ message: 'Access denied. Admin privileges required.' });
+    }
 
-    const query = {};
-    if (status) query.status = status;
-    if (category) query.category = category;
-    if (priority) query.priority = priority;
-    if (assignedTo) query.assignedTo = assignedTo;
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 10;
+    const skip = (page - 1) * limit;
+    
+    const { status, category, priority, search } = req.query;
+    
+    // Build filter object
+    const filter = {};
+    if (status) filter.status = status;
+    if (category) filter.category = category;
+    if (priority) filter.priority = priority;
+    if (search) {
+      filter.$or = [
+        { title: { $regex: search, $options: 'i' } },
+        { description: { $regex: search, $options: 'i' } }
+      ];
+    }
 
-    const sortOptions = {};
-    sortOptions[sortBy] = sortOrder === 'desc' ? -1 : 1;
-
-    const complaints = await Complaint.find(query)
+    const complaints = await Complaint.find(filter)
       .populate('user', 'name email phone')
       .populate('assignedTo', 'name email')
-      .sort(sortOptions)
-      .limit(limit * 1)
-      .skip((page - 1) * limit);
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(limit)
+      .lean();
 
-    const total = await Complaint.countDocuments(query);
+    const total = await Complaint.countDocuments(filter);
 
     res.json({
       complaints,
       pagination: {
-        current: parseInt(page),
+        current: page,
         pages: Math.ceil(total / limit),
-        total
+        total,
+        limit
       }
     });
   } catch (error) {
-    console.error('Admin complaints error:', error);
-    res.status(500).json({ message: 'Failed to fetch complaints' });
+    console.error('Get complaints error:', error);
+    res.status(500).json({ message: 'Server error' });
   }
 });
 
-// @route   PUT /api/admin/complaints/:id/assign
-// @desc    Assign complaint to staff member
-// @access  Private (Admin)
-router.put('/complaints/:id/assign', adminAuth, [
-  body('assignedTo').isMongoId().withMessage('Valid user ID is required'),
-  body('department').optional().isIn([
-    'public-works', 'sanitation', 'transport', 'environment',
-    'health', 'education', 'other'
-  ])
-], async (req, res) => {
+// @route   GET /api/admin/complaints/:id
+// @desc    Get specific complaint details
+// @access  Private (Admin only)
+router.get('/complaints/:id', auth, async (req, res) => {
   try {
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) {
-      return res.status(400).json({ errors: errors.array() });
+    // Check if user is admin
+    const user = await User.findById(req.userId);
+    if (!user || user.role !== 'admin') {
+      return res.status(403).json({ message: 'Access denied. Admin privileges required.' });
     }
 
-    const { assignedTo, department } = req.body;
+    const complaint = await Complaint.findById(req.params.id)
+      .populate('user', 'name email phone location')
+      .populate('assignedTo', 'name email')
+      .populate('updates.updatedBy', 'name email')
+      .lean();
 
-    // Verify assigned user exists and has appropriate role
-    const assignedUser = await User.findById(assignedTo);
-    if (!assignedUser || !['admin', 'moderator'].includes(assignedUser.role)) {
-      return res.status(400).json({ message: 'Invalid user for assignment' });
+    if (!complaint) {
+      return res.status(404).json({ message: 'Complaint not found' });
     }
 
+    res.json(complaint);
+  } catch (error) {
+    console.error('Get complaint error:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
+// @route   PUT /api/admin/complaints/:id/status
+// @desc    Update complaint status
+// @access  Private (Admin only)
+router.put('/complaints/:id/status', auth, async (req, res) => {
+  try {
+    // Check if user is admin
+    const user = await User.findById(req.userId);
+    if (!user || user.role !== 'admin') {
+      return res.status(403).json({ message: 'Access denied. Admin privileges required.' });
+    }
+
+    const { status, message } = req.body;
+    
     const complaint = await Complaint.findById(req.params.id);
     if (!complaint) {
       return res.status(404).json({ message: 'Complaint not found' });
     }
 
-    complaint.assignedTo = assignedTo;
-    if (department) complaint.department = department;
-
-    // Add update to history
+    // Add update to complaint
     complaint.updates.push({
-      message: `Complaint assigned to ${assignedUser.name}`,
-      status: 'in-progress',
+      message: message || `Status changed to ${status}`,
+      status,
       updatedBy: req.userId
     });
 
-    complaint.status = 'in-progress';
+    complaint.status = status;
+    
+    if (status === 'resolved' || status === 'closed') {
+      complaint.actualResolution = new Date();
+    }
+
     await complaint.save();
 
-    // Emit real-time update
-    const io = req.app.get('io');
-    io.to(`complaint-${complaint._id}`).emit('assignment-update', {
-      complaint: await Complaint.findById(complaint._id).populate('user', 'name email').populate('assignedTo', 'name email')
-    });
-
-    res.json({
-      message: 'Complaint assigned successfully',
-      complaint: await Complaint.findById(complaint._id).populate('user', 'name email').populate('assignedTo', 'name email')
-    });
+    res.json({ message: 'Complaint status updated successfully', complaint });
   } catch (error) {
-    console.error('Assignment error:', error);
-    res.status(500).json({ message: 'Failed to assign complaint' });
+    console.error('Update complaint status error:', error);
+    res.status(500).json({ message: 'Server error' });
   }
 });
 
 // @route   GET /api/admin/users
-// @desc    Get all users for admin
-// @access  Private (Admin)
-router.get('/users', adminAuth, async (req, res) => {
+// @desc    Get all users with filtering and pagination
+// @access  Private (Admin only)
+router.get('/users', auth, async (req, res) => {
   try {
-    const {
-      page = 1,
-      limit = 20,
-      role,
-      isActive,
-      search
-    } = req.query;
+    // Check if user is admin
+    if (req.userType !== 'admin') {
+      return res.status(403).json({ message: 'Access denied. Admin privileges required.' });
+    }
 
-    const query = {};
-    if (role) query.role = role;
-    if (isActive !== undefined) query.isActive = isActive === 'true';
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 10;
+    const skip = (page - 1) * limit;
+    
+    const { role, status, search } = req.query;
+    
+    // Build filter object
+    const filter = {};
+    if (role) filter.role = role;
+    if (status === 'active') filter.isActive = true;
+    if (status === 'inactive') filter.isActive = false;
     if (search) {
-      query.$or = [
+      filter.$or = [
         { name: { $regex: search, $options: 'i' } },
-        { email: { $regex: search, $options: 'i' } }
+        { email: { $regex: search, $options: 'i' } },
+        { phone: { $regex: search, $options: 'i' } }
       ];
     }
 
-    const users = await User.find(query)
-      .select('-password')
-      .sort({ createdAt: -1 })
-      .limit(limit * 1)
-      .skip((page - 1) * limit);
+    // Get users with filters (both regular users and admins)
+    const [users, admins] = await Promise.all([
+      User.find(filter).select('-password').sort({ createdAt: -1 }).lean(),
+      Admin.find().select('-password').sort({ createdAt: -1 }).lean()
+    ]);
 
-    const total = await User.countDocuments(query);
+    // Combine users and admins
+    const allUsers = [...users, ...admins].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+    const paginatedUsers = allUsers.slice(skip, skip + limit);
+
+    const totalUsers = await User.countDocuments(filter);
+    const totalAdmins = await Admin.countDocuments();
+    const total = totalUsers + totalAdmins;
 
     res.json({
-      users,
+      users: paginatedUsers,
       pagination: {
-        current: parseInt(page),
+        current: page,
         pages: Math.ceil(total / limit),
-        total
+        total,
+        limit
       }
     });
   } catch (error) {
-    console.error('Admin users error:', error);
-    res.status(500).json({ message: 'Failed to fetch users' });
+    console.error('Get users error:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
+// @route   GET /api/admin/users/:id
+// @desc    Get specific user details
+// @access  Private (Admin only)
+router.get('/users/:id', auth, async (req, res) => {
+  try {
+    // Check if user is admin
+    const user = await User.findById(req.userId);
+    if (!user || user.role !== 'admin') {
+      return res.status(403).json({ message: 'Access denied. Admin privileges required.' });
+    }
+
+    const targetUser = await User.findById(req.params.id)
+      .select('-password')
+      .lean();
+
+    if (!targetUser) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    // Get user's complaints
+    const userComplaints = await Complaint.find({ user: req.params.id })
+      .sort({ createdAt: -1 })
+      .limit(10)
+      .lean();
+
+    res.json({
+      user: targetUser,
+      complaints: userComplaints
+    });
+  } catch (error) {
+    console.error('Get user error:', error);
+    res.status(500).json({ message: 'Server error' });
   }
 });
 
 // @route   PUT /api/admin/users/:id/status
-// @desc    Update user status
-// @access  Private (Admin)
-router.put('/users/:id/status', adminAuth, [
-  body('isActive').isBoolean().withMessage('isActive must be a boolean'),
-  body('role').optional().isIn(['citizen', 'moderator', 'admin'])
-], async (req, res) => {
+// @desc    Update user status (activate/deactivate)
+// @access  Private (Admin only)
+router.put('/users/:id/status', auth, async (req, res) => {
   try {
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) {
-      return res.status(400).json({ errors: errors.array() });
+    // Check if user is admin
+    if (req.userType !== 'admin') {
+      return res.status(403).json({ message: 'Access denied. Admin privileges required.' });
     }
 
-    const { isActive, role } = req.body;
-
-    const user = await User.findById(req.params.id);
-    if (!user) {
+    const { isActive } = req.body;
+    
+    // Check both User and Admin collections
+    let targetUser = await User.findById(req.params.id);
+    let isAdmin = false;
+    
+    if (!targetUser) {
+      targetUser = await Admin.findById(req.params.id);
+      isAdmin = true;
+    }
+    
+    if (!targetUser) {
       return res.status(404).json({ message: 'User not found' });
     }
 
-    // Prevent admin from deactivating themselves
-    if (user._id.toString() === req.userId.toString() && isActive === false) {
-      return res.status(400).json({ message: 'Cannot deactivate your own account' });
-    }
+    targetUser.isActive = isActive;
+    await targetUser.save();
 
-    const updates = { isActive };
-    if (role) updates.role = role;
-
-    await User.findByIdAndUpdate(req.params.id, updates);
-
-    res.json({
-      message: 'User status updated successfully',
-      user: await User.findById(req.params.id).select('-password')
-    });
+    res.json({ message: 'User status updated successfully', user: targetUser });
   } catch (error) {
-    console.error('User status update error:', error);
-    res.status(500).json({ message: 'Failed to update user status' });
-  }
-});
-
-// @route   GET /api/admin/analytics
-// @desc    Get comprehensive analytics
-// @access  Private (Admin)
-router.get('/analytics', adminAuth, async (req, res) => {
-  try {
-    const [videoAnalytics, translationStats] = await Promise.all([
-      getVideoAnalytics(),
-      getTranslationStats()
-    ]);
-
-    // Complaint resolution time analytics
-    const resolutionTimeStats = await Complaint.aggregate([
-      {
-        $match: {
-          status: { $in: ['resolved', 'closed'] },
-          actualResolution: { $exists: true }
-        }
-      },
-      {
-        $project: {
-          resolutionTime: {
-            $divide: [
-              { $subtract: ['$actualResolution', '$createdAt'] },
-              1000 * 60 * 60 * 24 // Convert to days
-            ]
-          },
-          category: 1
-        }
-      },
-      {
-        $group: {
-          _id: '$category',
-          averageResolutionTime: { $avg: '$resolutionTime' },
-          count: { $sum: 1 }
-        }
-      },
-      { $sort: { averageResolutionTime: 1 } }
-    ]);
-
-    // User engagement analytics
-    const userEngagement = await Complaint.aggregate([
-      {
-        $group: {
-          _id: '$user',
-          complaintCount: { $sum: 1 },
-          avgRating: { $avg: '$rating' }
-        }
-      },
-      {
-        $lookup: {
-          from: 'users',
-          localField: '_id',
-          foreignField: '_id',
-          as: 'user'
-        }
-      },
-      { $unwind: '$user' },
-      {
-        $group: {
-          _id: null,
-          totalActiveUsers: { $sum: 1 },
-          avgComplaintsPerUser: { $avg: '$complaintCount' },
-          avgUserRating: { $avg: '$avgRating' }
-        }
-      }
-    ]);
-
-    res.json({
-      videoAnalytics,
-      translationStats,
-      resolutionTimeStats,
-      userEngagement: userEngagement[0] || {
-        totalActiveUsers: 0,
-        avgComplaintsPerUser: 0,
-        avgUserRating: 0
-      }
-    });
-  } catch (error) {
-    console.error('Analytics error:', error);
-    res.status(500).json({ message: 'Failed to fetch analytics' });
+    console.error('Update user status error:', error);
+    res.status(500).json({ message: 'Server error' });
   }
 });
 

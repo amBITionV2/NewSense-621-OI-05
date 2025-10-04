@@ -142,9 +142,35 @@ const Register = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     
-    const result = await register(formData);
+    // Validate admin registration requirements
+    if (selectedRole === 'admin' && !formData.governmentIdNumber) {
+      setErrors({ governmentIdNumber: 'Government ID number is required for admin registration' });
+      return;
+    }
+    
+    // Add the selected role to the form data
+    const registrationData = {
+      ...formData,
+      role: selectedRole
+    };
+    
+    console.log('Registration data being sent:', {
+      selectedRole,
+      governmentIdNumber: formData.governmentIdNumber,
+      role: selectedRole
+    });
+    
+    const result = await register(registrationData);
     if (result.success) {
-      navigate('/dashboard');
+      console.log('Registration successful, user role:', result.user?.role);
+      // Redirect based on user role
+      if (result.user?.role === 'admin') {
+        navigate('/admin');
+      } else {
+        navigate('/dashboard');
+      }
+    } else {
+      console.error('Registration failed:', result.error);
     }
   };
 
@@ -703,7 +729,7 @@ const Register = () => {
               {selectedRole === 'admin' && (
                 <div className="border-t pt-6">
                   <label htmlFor="governmentIdNumber" className="block text-sm font-medium text-gray-700 mb-2">
-                    Government ID Number
+                    Government ID Number *
                   </label>
                   <input
                     id="governmentIdNumber"
@@ -711,9 +737,12 @@ const Register = () => {
                     type="text"
                     value={formData.governmentIdNumber}
                     onChange={handleChange}
-                    className="input-field px-4"
+                    className={`input-field px-4 ${errors.governmentIdNumber ? 'border-red-500' : ''}`}
                     placeholder="Enter your government ID number"
                   />
+                  {errors.governmentIdNumber && (
+                    <p className="mt-1 text-sm text-red-600">{errors.governmentIdNumber}</p>
+                  )}
                 </div>
               )}
 
@@ -730,7 +759,7 @@ const Register = () => {
                 ) : (
                   <button
                     onClick={handleSubmit}
-                    disabled={loading}
+                    disabled={loading || (selectedRole === 'admin' && !formData.governmentIdNumber)}
                     className="w-full py-3 px-4 rounded-xl font-semibold text-white bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 transition-all duration-300 flex items-center justify-center space-x-2 disabled:opacity-50"
                   >
                     {loading ? <LoadingSpinner size="small" /> : (
