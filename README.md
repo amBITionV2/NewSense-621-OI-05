@@ -17,7 +17,7 @@ An intelligent citizen complaint management system that leverages AI to automate
 - **Location-Based Reporting**: Report issues with precise location mapping using Google Maps integration
 - **AI-Powered Social Media**: Automatic posting to Twitter and Instagram until issues are resolved
 - **Smart Translation**: AI learns and translates content continuously as users interact
-- **Educational Content**: Daily AI-generated videos about civic responsibility and community awareness
+- **Educational Content**: Curated YouTube videos about civic responsibility and community awareness
 - **Community Integration**: Real-time community feed showing user reports with hardcoded sample data
 - **Voice-to-Text**: Speech recognition for easy complaint submission in multiple languages
 
@@ -33,7 +33,7 @@ An intelligent citizen complaint management system that leverages AI to automate
 ### AI Features
 - **Social Media Automation**: AI generates and posts content to social platforms
 - **Continuous Learning**: Translation system improves with user feedback
-- **Educational Video Generation**: Daily AI-created content about civic responsibility
+- **Educational Video Integration**: Curated YouTube videos about civic responsibility
 - **Smart Categorization**: Automatic issue classification and routing
 
 ## 🚀 Quick Start
@@ -188,9 +188,14 @@ citizen-complaint-portal/
 ## 🤖 AI Integration
 
 ### OpenAI Integration
-- **Content Generation**: Educational videos and social media posts
+- **Content Generation**: Social media posts and educational content
 - **Translation**: Multi-language support with context learning
 - **Text Processing**: Complaint categorization and summarization
+
+### YouTube Video Integration
+- **Educational Content**: Curated YouTube videos about civic responsibility
+- **Embedded Players**: Direct YouTube video playback in the application
+- **Categorized Content**: Videos organized by civic sense topics
 
 ### Social Media Automation
 - **Twitter**: Automated posting with AI-generated content

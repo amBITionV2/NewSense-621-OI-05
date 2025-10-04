@@ -10,7 +10,10 @@
     "build": "cd client && npm run build",
     "install-all": "npm install && cd server && npm install && cd ../client && npm install",
     "setup": "node setup.js",
-    "start": "npm run dev"
+    "start": "npm run dev",
+    "init-youtube-videos": "cd server && node scripts/initializeYouTubeVideos.js",
+    "test-youtube-videos": "cd server && node scripts/testYouTubeVideos.js",
+    "clear-and-reinit-videos": "cd server && node scripts/clearAndReinitVideos.js"
   },
   "keywords": [
     "citizen",
@@ -25,6 +28,7 @@
     "concurrently": "^8.2.2"
   },
   "dependencies": {
-    "axios": "^1.12.2"
+    "axios": "^1.12.2",
+    "youtube-videos": "^1.1.0"
   }
 }

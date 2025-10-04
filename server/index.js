@@ -65,7 +65,7 @@ connectDatabase();
 app.use('/api/auth', require('./routes/auth'));
 app.use('/api/complaints', require('./routes/complaints-simple'));
 app.use('/api/admin', require('./routes/admin'));
-// app.use('/api/ai', require('./routes/ai'));
+app.use('/api/ai', require('./routes/ai'));
 
 // Socket.io for real-time updates
 io.on('connection', (socket) => {
