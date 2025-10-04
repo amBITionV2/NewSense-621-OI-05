@@ -15,12 +15,19 @@ import {
   Star,
   Zap,
   Heart,
-  Sparkles
+  Sparkles,
+  Sun,
+  Cloud,
+  CloudRain,
+  Thermometer,
+  Droplets
 } from 'lucide-react';
 import LoadingSpinner from '../components/LoadingSpinner';
 
 const Dashboard = () => {
   const { user } = useAuth();
+  
+  
   const [stats, setStats] = useState({
     totalComplaints: 0,
     openComplaints: 0,
@@ -35,6 +42,14 @@ const Dashboard = () => {
   });
   const [isVisible, setIsVisible] = useState(false);
   const dashboardRef = useRef(null);
+
+  // Get personalized greeting based on time
+  const getGreeting = () => {
+    const hour = new Date().getHours();
+    if (hour < 12) return 'Good morning';
+    if (hour < 17) return 'Good afternoon';
+    return 'Good evening';
+  };
 
   useEffect(() => {
     fetchDashboardData();
@@ -138,6 +153,7 @@ const Dashboard = () => {
     );
   }
 
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-cyan-50 relative overflow-hidden">
       {/* Animated Background Elements */}
@@ -148,16 +164,12 @@ const Dashboard = () => {
       </div>
 
       <div className="container mx-auto px-4 py-8 relative z-10">
-        {/* Welcome Section with Animation */}
-        <div className={`mb-12 text-center transform transition-all duration-1000 ${isVisible ? 'translate-y-0 opacity-100' : 'translate-y-8 opacity-0'}`}>
-          <div className="inline-flex items-center space-x-2 mb-4">
-            <Sparkles className="w-6 h-6 text-yellow-500 animate-spin" />
-            <h1 className="text-4xl md:text-5xl font-bold bg-gradient-to-r from-blue-600 via-purple-600 to-cyan-600 bg-clip-text text-transparent">
-              Welcome back, {user?.name}!
-            </h1>
-            <Sparkles className="w-6 h-6 text-yellow-500 animate-spin" style={{animationDirection: 'reverse'}} />
-          </div>
-          <p className="text-xl text-gray-600 max-w-2xl mx-auto">
+        {/* Welcome Message */}
+        <div className="mb-8">
+          <h1 className="text-3xl font-bold text-gray-900">
+            Welcome, {user?.name || 'Citizen'}!
+          </h1>
+          <p className="text-gray-600 mt-2">
             Here's what's happening in your community. Let's make it better together! ✨
           </p>
         </div>
@@ -242,6 +254,57 @@ const Dashboard = () => {
           </div>
         </div>
 
+
+        {/* User Profile Card with Weather */}
+        <div className="mb-8 grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <div className="lg:col-span-2 bg-white/80 backdrop-blur-lg rounded-2xl shadow-xl border border-white/30 p-6">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-4">
+                <div className="w-16 h-16 bg-gradient-to-br from-blue-500 to-purple-600 rounded-2xl flex items-center justify-center shadow-lg">
+                  <span className="text-white font-bold text-2xl">
+                    {user?.name ? user.name.charAt(0).toUpperCase() : 'C'}
+                  </span>
+                </div>
+                <div>
+                  <h3 className="text-2xl font-bold text-gray-900">{user?.name || 'Citizen'}</h3>
+                  <p className="text-gray-600 capitalize">{user?.role || 'citizen'} • {user?.location?.city || 'Your City'}</p>
+                  <p className="text-sm text-gray-500">Member since {user?.createdAt ? new Date(user.createdAt).toLocaleDateString() : 'Recently'}</p>
+                </div>
+              </div>
+              <div className="text-right">
+                <p className="text-sm text-gray-500">Last active</p>
+                <p className="text-lg font-semibold text-gray-900">
+                  {user?.lastLogin ? new Date(user.lastLogin).toLocaleDateString() : 'Today'}
+                </p>
+              </div>
+            </div>
+          </div>
+          
+          {/* Weather Widget */}
+          <div className="bg-gradient-to-br from-blue-500 to-purple-600 rounded-2xl shadow-xl p-6 text-white">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold">Today's Weather</h3>
+              <Sun className="w-6 h-6 text-yellow-300" />
+            </div>
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-3xl font-bold">24°C</p>
+                <p className="text-blue-100">Sunny</p>
+              </div>
+              <div className="text-right text-sm">
+                <div className="flex items-center space-x-2 mb-1">
+                  <Thermometer className="w-4 h-4" />
+                  <span>Feels like 26°C</span>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <Droplets className="w-4 h-4" />
+                  <span>Humidity 65%</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
         {/* Stats Cards with Animated Counters */}
         <div ref={dashboardRef} className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-12">
           <div className="group relative overflow-hidden bg-white/80 backdrop-blur-lg rounded-2xl shadow-xl border border-white/30 p-8 hover:shadow-2xl hover:scale-105 transition-all duration-500">
@@ -305,6 +368,38 @@ const Dashboard = () => {
                 <span>Successfully fixed</span>
               </div>
             </div>
+          </div>
+        </div>
+
+        {/* Quick Stats Overview */}
+        <div className="mb-8 grid grid-cols-2 md:grid-cols-4 gap-4">
+          <div className="bg-white/60 backdrop-blur-lg rounded-xl p-4 text-center border border-white/20">
+            <div className="w-8 h-8 bg-green-100 rounded-lg flex items-center justify-center mx-auto mb-2">
+              <CheckCircle className="w-5 h-5 text-green-600" />
+            </div>
+            <p className="text-sm text-gray-600">Resolved Today</p>
+            <p className="text-xl font-bold text-gray-900">3</p>
+          </div>
+          <div className="bg-white/60 backdrop-blur-lg rounded-xl p-4 text-center border border-white/20">
+            <div className="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center mx-auto mb-2">
+              <Clock className="w-5 h-5 text-blue-600" />
+            </div>
+            <p className="text-sm text-gray-600">Avg. Response</p>
+            <p className="text-xl font-bold text-gray-900">2.4h</p>
+          </div>
+          <div className="bg-white/60 backdrop-blur-lg rounded-xl p-4 text-center border border-white/20">
+            <div className="w-8 h-8 bg-purple-100 rounded-lg flex items-center justify-center mx-auto mb-2">
+              <Users className="w-5 h-5 text-purple-600" />
+            </div>
+            <p className="text-sm text-gray-600">Community</p>
+            <p className="text-xl font-bold text-gray-900">1.2k</p>
+          </div>
+          <div className="bg-white/60 backdrop-blur-lg rounded-xl p-4 text-center border border-white/20">
+            <div className="w-8 h-8 bg-orange-100 rounded-lg flex items-center justify-center mx-auto mb-2">
+              <Star className="w-5 h-5 text-orange-600" />
+            </div>
+            <p className="text-sm text-gray-600">Your Rating</p>
+            <p className="text-xl font-bold text-gray-900">4.8</p>
           </div>
         </div>
 
@@ -385,20 +480,21 @@ const Dashboard = () => {
           </div>
         </div>
 
-        {/* Daily Educational Content with Modern Design */}
-        <div className="mt-12 relative overflow-hidden bg-gradient-to-br from-blue-600 via-purple-600 to-cyan-600 rounded-2xl p-8 text-white shadow-2xl">
-          <div className="absolute inset-0 bg-gradient-to-br from-blue-500/20 to-purple-500/20"></div>
-          <div className="absolute -top-20 -right-20 w-40 h-40 bg-white/10 rounded-full"></div>
-          <div className="absolute -bottom-20 -left-20 w-40 h-40 bg-white/10 rounded-full"></div>
-          
-          <div className="relative z-10 flex items-center justify-between">
-            <div className="flex-1">
+        {/* Notifications and Updates */}
+        <div className="mt-12 grid grid-cols-1 lg:grid-cols-2 gap-8">
+          {/* Daily Educational Content */}
+          <div className="relative overflow-hidden bg-gradient-to-br from-blue-600 via-purple-600 to-cyan-600 rounded-2xl p-8 text-white shadow-2xl">
+            <div className="absolute inset-0 bg-gradient-to-br from-blue-500/20 to-purple-500/20"></div>
+            <div className="absolute -top-20 -right-20 w-40 h-40 bg-white/10 rounded-full"></div>
+            <div className="absolute -bottom-20 -left-20 w-40 h-40 bg-white/10 rounded-full"></div>
+            
+            <div className="relative z-10">
               <div className="flex items-center space-x-3 mb-4">
                 <Sparkles className="w-6 h-6 text-yellow-300 animate-pulse" />
                 <h3 className="text-2xl font-bold">Today's Learning</h3>
                 <Sparkles className="w-6 h-6 text-yellow-300 animate-pulse" />
               </div>
-              <p className="text-blue-100 mb-6 text-lg leading-relaxed max-w-2xl">
+              <p className="text-blue-100 mb-6 text-lg leading-relaxed">
                 Discover daily educational content about civic responsibility and community awareness. 
                 Learn how to be an active citizen and make a positive impact in your community.
               </p>
@@ -411,8 +507,45 @@ const Dashboard = () => {
                 <TrendingUp className="w-4 h-4 group-hover:translate-x-1 transition-transform duration-300" />
               </Link>
             </div>
-            <div className="w-24 h-24 bg-white/20 backdrop-blur-lg rounded-2xl flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform duration-500">
-              <Video className="w-12 h-12 text-white" />
+          </div>
+
+          {/* Recent Notifications */}
+          <div className="bg-white/80 backdrop-blur-lg rounded-2xl shadow-xl border border-white/30 p-8">
+            <div className="flex items-center justify-between mb-6">
+              <h3 className="text-2xl font-bold text-gray-900">Recent Updates</h3>
+              <div className="w-3 h-3 bg-green-500 rounded-full animate-pulse"></div>
+            </div>
+            <div className="space-y-4">
+              <div className="flex items-start space-x-3 p-4 bg-blue-50 rounded-xl">
+                <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center">
+                  <CheckCircle className="w-4 h-4 text-white" />
+                </div>
+                <div>
+                  <p className="font-semibold text-gray-900">Issue Resolved</p>
+                  <p className="text-sm text-gray-600">Your complaint about street lighting has been fixed</p>
+                  <p className="text-xs text-gray-500">2 hours ago</p>
+                </div>
+              </div>
+              <div className="flex items-start space-x-3 p-4 bg-green-50 rounded-xl">
+                <div className="w-8 h-8 bg-green-500 rounded-full flex items-center justify-center">
+                  <Star className="w-4 h-4 text-white" />
+                </div>
+                <div>
+                  <p className="font-semibold text-gray-900">New Feature</p>
+                  <p className="text-sm text-gray-600">AI translation tool is now available</p>
+                  <p className="text-xs text-gray-500">1 day ago</p>
+                </div>
+              </div>
+              <div className="flex items-start space-x-3 p-4 bg-purple-50 rounded-xl">
+                <div className="w-8 h-8 bg-purple-500 rounded-full flex items-center justify-center">
+                  <Users className="w-4 h-4 text-white" />
+                </div>
+                <div>
+                  <p className="font-semibold text-gray-900">Community Update</p>
+                  <p className="text-sm text-gray-600">New educational video about civic rights</p>
+                  <p className="text-xs text-gray-500">3 days ago</p>
+                </div>
+              </div>
             </div>
           </div>
         </div>
