@@ -1,15 +1,32 @@
 const express = require('express');
 const multer = require('multer');
+const path = require('path');
+const fs = require('fs');
 const { body, validationResult } = require('express-validator');
 const Complaint = require('../models/Complaint');
 const { auth } = require('../middleware/auth');
-const { uploadToCloudinary } = require('../utils/cloudinary');
 const { postToSocialMedia } = require('../services/socialMediaService');
 
 const router = express.Router();
 
-// Configure multer for file uploads
-const storage = multer.memoryStorage();
+// Ensure uploads directory exists
+const uploadsDir = path.join(__dirname, '../uploads');
+if (!fs.existsSync(uploadsDir)) {
+  fs.mkdirSync(uploadsDir, { recursive: true });
+}
+
+// Configure multer for local file storage
+const storage = multer.diskStorage({
+  destination: function (req, file, cb) {
+    cb(null, uploadsDir);
+  },
+  filename: function (req, file, cb) {
+    // Generate unique filename with timestamp
+    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+    cb(null, file.fieldname + '-' + uniqueSuffix + path.extname(file.originalname));
+  }
+});
+
 const upload = multer({
   storage,
   limits: {
@@ -47,14 +64,16 @@ router.post('/', auth, upload.array('media', 5), [
 
     const { title, description, category, location, priority = 'medium' } = req.body;
     
-    // Upload media files
+    // Handle uploaded media files
     const mediaFiles = [];
     if (req.files) {
       for (const file of req.files) {
-        const result = await uploadToCloudinary(file.buffer, file.mimetype);
+        // Create local URL for the uploaded file
+        const fileUrl = `/uploads/${file.filename}`;
         mediaFiles.push({
-          url: result.secure_url,
+          url: fileUrl,
           filename: file.originalname,
+          localPath: file.path,
           type: file.mimetype.startsWith('image/') ? 'image' : 'video'
         });
       }

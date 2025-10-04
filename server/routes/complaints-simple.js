@@ -1,14 +1,63 @@
 const express = require('express');
+const multer = require('multer');
+const path = require('path');
+const fs = require('fs');
+const mongoose = require('mongoose');
 const { body, validationResult } = require('express-validator');
-const mockDB = require('../mockDatabase');
+const Complaint = require('../models/Complaint');
+const User = require('../models/User');
 const { auth } = require('../middleware/auth');
 
 const router = express.Router();
 
+// Ensure uploads directory exists
+const uploadsDir = path.join(__dirname, '../uploads');
+if (!fs.existsSync(uploadsDir)) {
+  fs.mkdirSync(uploadsDir, { recursive: true });
+}
+
+// Configure multer for local file storage
+const storage = multer.diskStorage({
+  destination: function (req, file, cb) {
+    cb(null, uploadsDir);
+  },
+  filename: function (req, file, cb) {
+    // Generate unique filename with timestamp
+    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+    cb(null, file.fieldname + '-' + uniqueSuffix + path.extname(file.originalname));
+  }
+});
+
+const upload = multer({
+  storage,
+  limits: {
+    fileSize: 10 * 1024 * 1024 // 10MB limit
+  },
+  fileFilter: (req, file, cb) => {
+    if (file.mimetype.startsWith('image/') || file.mimetype.startsWith('video/')) {
+      cb(null, true);
+    } else {
+      cb(new Error('Only image and video files are allowed'), false);
+    }
+  }
+});
+
+// Middleware to parse location JSON string
+const parseLocationMiddleware = (req, res, next) => {
+  if (req.body.location && typeof req.body.location === 'string') {
+    try {
+      req.body.location = JSON.parse(req.body.location);
+    } catch (parseError) {
+      return res.status(400).json({ message: 'Invalid location data format' });
+    }
+  }
+  next();
+};
+
 // @route   POST /api/complaints
 // @desc    Create a new complaint
 // @access  Private
-router.post('/', auth, [
+router.post('/', auth, upload.array('media', 5), parseLocationMiddleware, [
   body('title').trim().isLength({ min: 5, max: 100 }).withMessage('Title must be between 5 and 100 characters'),
   body('description').trim().isLength({ min: 20 }).withMessage('Description must be at least 20 characters'),
   body('category').isIn([
@@ -28,8 +77,27 @@ router.post('/', auth, [
 
     const { title, description, category, location, priority = 'medium' } = req.body;
     
+    // Handle uploaded media files
+    const mediaFiles = [];
+    if (req.files) {
+      for (const file of req.files) {
+        // Create local URL for the uploaded file
+        const fileUrl = `/uploads/${file.filename}`;
+        mediaFiles.push({
+          url: fileUrl,
+          filename: file.originalname,
+          localPath: file.path,
+          type: file.mimetype.startsWith('image/') ? 'image' : 'video'
+        });
+      }
+    }
+
+    // Separate images and videos
+    const images = mediaFiles.filter(f => f.type === 'image');
+    const videos = mediaFiles.filter(f => f.type === 'video');
+    
     // Create complaint
-    const complaint = mockDB.createComplaint({
+    const complaint = new Complaint({
       user: req.userId,
       title,
       description,
@@ -46,15 +114,17 @@ router.post('/', auth, [
         country: location.country || 'India',
         pincode: location.pincode
       },
-      images: [],
-      videos: [],
+      images,
+      videos,
       socialMediaPosts: []
     });
 
+    await complaint.save();
+
     // Get user info for response
-    const user = mockDB.findUserById(req.userId);
+    const user = await User.findById(req.userId).select('name email');
     const complaintWithUser = {
-      ...complaint,
+      ...complaint.toObject(),
       user: {
         _id: user._id,
         name: user.name,
@@ -88,8 +158,8 @@ router.get('/', auth, async (req, res) => {
     const query = {};
 
     // Filter by user's complaints or all complaints for admin
-    const user = mockDB.findUserById(req.userId);
-    if (user.role === 'citizen') {
+    const user = await User.findById(req.userId).select('role');
+    if (user && user.role === 'citizen') {
       query.user = req.userId;
     }
 
@@ -98,27 +168,17 @@ router.get('/', auth, async (req, res) => {
     if (status) query.status = status;
     if (priority) query.priority = priority;
 
-    const allComplaints = mockDB.findComplaints(query);
-    const total = allComplaints.length;
-    const startIndex = (page - 1) * limit;
-    const endIndex = startIndex + parseInt(limit);
-    const complaints = allComplaints.slice(startIndex, endIndex);
+    const complaints = await Complaint.find(query)
+      .populate('user', 'name email')
+      .populate('assignedTo', 'name email')
+      .sort({ createdAt: -1 })
+      .limit(limit * 1)
+      .skip((page - 1) * limit);
 
-    // Add user info to complaints
-    const complaintsWithUsers = complaints.map(complaint => {
-      const complaintUser = mockDB.findUserById(complaint.user);
-      return {
-        ...complaint,
-        user: {
-          _id: complaintUser._id,
-          name: complaintUser.name,
-          email: complaintUser.email
-        }
-      };
-    });
+    const total = await Complaint.countDocuments(query);
 
     res.json({
-      complaints: complaintsWithUsers,
+      complaints,
       pagination: {
         current: parseInt(page),
         pages: Math.ceil(total / limit),
@@ -136,29 +196,27 @@ router.get('/', auth, async (req, res) => {
 // @access  Private
 router.get('/:id', auth, async (req, res) => {
   try {
-    const complaint = mockDB.findComplaintById(req.params.id);
+    // Validate ObjectId format
+    if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+      return res.status(400).json({ message: 'Invalid complaint ID format' });
+    }
+
+    const complaint = await Complaint.findById(req.params.id)
+      .populate('user', 'name email')
+      .populate('assignedTo', 'name email')
+      .populate('updates.updatedBy', 'name email');
+
     if (!complaint) {
       return res.status(404).json({ message: 'Complaint not found' });
     }
 
     // Check if user can view this complaint
-    const user = mockDB.findUserById(req.userId);
-    if (user.role === 'citizen' && complaint.user !== req.userId) {
+    const user = await User.findById(req.userId).select('role');
+    if (user && user.role === 'citizen' && complaint.user._id.toString() !== req.userId.toString()) {
       return res.status(403).json({ message: 'Access denied' });
     }
 
-    // Add user info
-    const complaintUser = mockDB.findUserById(complaint.user);
-    const complaintWithUser = {
-      ...complaint,
-      user: {
-        _id: complaintUser._id,
-        name: complaintUser.name,
-        email: complaintUser.email
-      }
-    };
-
-    res.json({ complaint: complaintWithUser });
+    res.json({ complaint });
   } catch (error) {
     console.error('Get complaint error:', error);
     res.status(500).json({ message: 'Server error fetching complaint' });
