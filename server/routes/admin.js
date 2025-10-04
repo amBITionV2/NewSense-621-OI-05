@@ -360,4 +360,233 @@ router.put('/users/:id/status', auth, async (req, res) => {
   }
 });
 
+// Get all citizens with filters, sorting, and pagination
+router.get('/citizens', auth, async (req, res) => {
+  try {
+    if (req.userType !== 'admin') {
+      return res.status(403).json({ message: 'Access denied. Admin privileges required.' });
+    }
+
+    const { 
+      gender, 
+      caste, 
+      religion, 
+      occupation, 
+      verificationStatus, 
+      isActive, 
+      search, 
+      ageMin,
+      ageMax,
+      incomeMin,
+      incomeMax,
+      residenceType,
+      language,
+      hasIncome,
+      registrationDateFrom,
+      registrationDateTo,
+      location,
+      sortBy = 'createdAt', 
+      sortOrder = 'desc', 
+      page = 1, 
+      limit = 10 
+    } = req.query;
+    
+    const query = { role: 'citizen' }; // Only fetch citizens
+
+    // Apply filters
+    if (gender) query.gender = gender;
+    if (caste) query.caste = caste;
+    if (religion) query.religion = religion;
+    if (occupation) query.occupation = { $regex: occupation, $options: 'i' };
+    if (verificationStatus) query.verificationStatus = verificationStatus;
+    if (isActive !== undefined) query.isActive = isActive === 'true';
+    if (residenceType) query.residenceType = residenceType;
+    if (hasIncome) query.hasIncome = hasIncome;
+    
+    // Age range filter
+    if (ageMin || ageMax) {
+      const currentDate = new Date();
+      query.dateOfBirth = {};
+      if (ageMin) {
+        const maxBirthDate = new Date(currentDate.getFullYear() - parseInt(ageMin), currentDate.getMonth(), currentDate.getDate());
+        query.dateOfBirth.$lte = maxBirthDate;
+      }
+      if (ageMax) {
+        const minBirthDate = new Date(currentDate.getFullYear() - parseInt(ageMax) - 1, currentDate.getMonth(), currentDate.getDate());
+        query.dateOfBirth.$gte = minBirthDate;
+      }
+    }
+    
+    // Income range filter
+    if (incomeMin || incomeMax) {
+      query.salary = {};
+      if (incomeMin) {
+        query.salary.$gte = parseInt(incomeMin);
+      }
+      if (incomeMax) {
+        query.salary.$lte = parseInt(incomeMax);
+      }
+    }
+    
+    // Language filter
+    if (language) {
+      query.languagesSpoken = { $regex: language, $options: 'i' };
+    }
+    
+    // Registration date range filter
+    if (registrationDateFrom || registrationDateTo) {
+      query.createdAt = {};
+      if (registrationDateFrom) {
+        query.createdAt.$gte = new Date(registrationDateFrom);
+      }
+      if (registrationDateTo) {
+        const endDate = new Date(registrationDateTo);
+        endDate.setHours(23, 59, 59, 999);
+        query.createdAt.$lte = endDate;
+      }
+    }
+    
+    // Location filter
+    if (location) {
+      query.$or = [
+        { 'location.address': { $regex: location, $options: 'i' } },
+        { 'location.city': { $regex: location, $options: 'i' } },
+        { 'location.state': { $regex: location, $options: 'i' } }
+      ];
+    }
+
+    // Search functionality
+    if (search) {
+      const searchConditions = [
+        { name: { $regex: search, $options: 'i' } },
+        { email: { $regex: search, $options: 'i' } },
+        { phone: { $regex: search, $options: 'i' } },
+        { aadhaarNumber: { $regex: search, $options: 'i' } }
+      ];
+      
+      // If location filter is also applied, combine them with $and
+      if (query.$or && query.$or.some(condition => condition['location.address'])) {
+        query.$and = [
+          { $or: query.$or },
+          { $or: searchConditions }
+        ];
+        delete query.$or;
+      } else {
+        query.$or = searchConditions;
+      }
+    }
+
+    // Sorting
+    const sortOptions = {};
+    sortOptions[sortBy] = sortOrder === 'asc' ? 1 : -1;
+
+    // Execute query with pagination
+    const citizens = await User.find(query)
+      .sort(sortOptions)
+      .skip((page - 1) * limit)
+      .limit(parseInt(limit))
+      .select('-password -__v'); // Exclude sensitive fields
+
+    const totalCitizens = await User.countDocuments(query);
+
+    res.json({
+      citizens,
+      totalCitizens,
+      currentPage: parseInt(page),
+      totalPages: Math.ceil(totalCitizens / limit)
+    });
+  } catch (error) {
+    console.error('Error fetching citizens:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
+// Get citizen statistics
+router.get('/citizen-stats', auth, async (req, res) => {
+  try {
+    if (req.userType !== 'admin') {
+      return res.status(403).json({ message: 'Access denied. Admin privileges required.' });
+    }
+
+    const total = await User.countDocuments({ role: 'citizen' });
+    const verified = await User.countDocuments({ role: 'citizen', verificationStatus: 'approved' });
+    const pending = await User.countDocuments({ role: 'citizen', verificationStatus: 'pending' });
+    const active = await User.countDocuments({ role: 'citizen', isActive: true });
+
+    res.json({ total, verified, pending, active });
+  } catch (error) {
+    console.error('Error fetching citizen stats:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
+// Update citizen verification status
+router.put('/citizens/:id/verification', auth, async (req, res) => {
+  try {
+    if (req.userType !== 'admin') {
+      return res.status(403).json({ message: 'Access denied. Admin privileges required.' });
+    }
+
+    const { id } = req.params;
+    const { verificationStatus } = req.body;
+
+    const citizen = await User.findById(id);
+    if (!citizen || citizen.role !== 'citizen') {
+      return res.status(404).json({ message: 'Citizen not found' });
+    }
+
+    citizen.verificationStatus = verificationStatus;
+    await citizen.save();
+
+    res.json({ message: 'Citizen verification status updated successfully', citizen });
+  } catch (error) {
+    console.error('Error updating citizen verification status:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
+// Export citizens data to CSV
+router.get('/citizens/export/csv', auth, async (req, res) => {
+  try {
+    if (req.userType !== 'admin') {
+      return res.status(403).json({ message: 'Access denied. Admin privileges required.' });
+    }
+
+    const citizens = await User.find({ role: 'citizen' }).lean();
+    
+    const headers = [
+      '_id', 'name', 'email', 'phone', 'aadhaarNumber', 'dateOfBirth', 'gender',
+      'fatherName', 'motherName', 'caste', 'religion', 'occupation', 'salary',
+      'hasIncome', 'languagesSpoken', 'nativePlace', 'residenceType',
+      'location.address', 'location.city', 'location.state', 'location.pincode',
+      'isActive', 'isVerified', 'verificationStatus', 'createdAt'
+    ];
+
+    let csv = headers.join(',') + '\n';
+    citizens.forEach(citizen => {
+      const row = headers.map(header => {
+        let value = citizen;
+        for (const part of header.split('.')) {
+          value = value ? value[part] : '';
+        }
+        if (Array.isArray(value)) {
+          value = `"${value.join(';')}"`; // Handle arrays
+        } else if (typeof value === 'string' && value.includes(',')) {
+          value = `"${value}"`; // Quote strings with commas
+        }
+        return value;
+      }).join(',');
+      csv += row + '\n';
+    });
+
+    res.header('Content-Type', 'text/csv');
+    res.attachment('citizens_export.csv');
+    res.send(csv);
+
+  } catch (error) {
+    console.error('Error exporting citizens data:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
 module.exports = router;
