@@ -276,7 +276,7 @@ const Dashboard = () => {
                 </div>
                 <div>
                   <h3 className="text-2xl font-bold text-gray-900">{user?.name || 'Citizen'}</h3>
-                  <p className="text-gray-600 capitalize">{user?.role || 'citizen'} • {user?.location?.city || 'Your City'}</p>
+                  <p className="text-gray-600 capitalize">{user?.role || 'user'} • {user?.location?.city || 'Your City'}</p>
                   <p className="text-sm text-gray-500">Member since {user?.createdAt ? new Date(user.createdAt).toLocaleDateString() : 'Recently'}</p>
                 </div>
               </div>
