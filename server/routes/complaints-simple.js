@@ -7,6 +7,7 @@ const { body, validationResult } = require('express-validator');
 const Complaint = require('../models/Complaint');
 const User = require('../models/User');
 const { auth } = require('../middleware/auth');
+const mockDB = require('../mockDatabase');
 
 const router = express.Router();
 
@@ -96,39 +97,77 @@ router.post('/', auth, upload.array('media', 5), parseLocationMiddleware, [
     const images = mediaFiles.filter(f => f.type === 'image');
     const videos = mediaFiles.filter(f => f.type === 'video');
     
-    // Create complaint
-    const complaint = new Complaint({
-      user: req.userId,
-      title,
-      description,
-      category,
-      priority,
-      location: {
-        address: location.address,
-        coordinates: {
-          lat: parseFloat(location.coordinates.lat),
-          lng: parseFloat(location.coordinates.lng)
-        },
-        city: location.city,
-        state: location.state,
-        country: location.country || 'India',
-        pincode: location.pincode
-      },
-      images,
-      videos,
-      socialMediaPosts: []
-    });
+    let complaint;
 
-    await complaint.save();
+    // Check if MongoDB is connected, otherwise use mock database
+    if (mongoose.connection.readyState === 1) {
+      // Use MongoDB
+      complaint = new Complaint({
+        user: req.userId,
+        title,
+        description,
+        category,
+        priority,
+        location: {
+          address: location.address,
+          coordinates: {
+            lat: parseFloat(location.coordinates.lat),
+            lng: parseFloat(location.coordinates.lng)
+          },
+          city: location.city,
+          state: location.state,
+          country: location.country || 'India',
+          pincode: location.pincode
+        },
+        images,
+        videos,
+        socialMediaPosts: []
+      });
+
+      await complaint.save();
+    } else {
+      // Use mock database
+      complaint = mockDB.createComplaint({
+        user: req.userId,
+        title,
+        description,
+        category,
+        priority,
+        location: {
+          address: location.address,
+          coordinates: {
+            lat: parseFloat(location.coordinates.lat),
+            lng: parseFloat(location.coordinates.lng)
+          },
+          city: location.city,
+          state: location.state,
+          country: location.country || 'India',
+          pincode: location.pincode
+        },
+        images,
+        videos,
+        socialMediaPosts: []
+      });
+    }
 
     // Get user info for response
-    const user = await User.findById(req.userId).select('name email');
+    let user;
+    if (mongoose.connection.readyState === 1) {
+      user = await User.findById(req.userId).select('name email');
+    } else {
+      user = mockDB.findUserById(req.userId);
+    }
+    
     const complaintWithUser = {
-      ...complaint.toObject(),
-      user: {
-        _id: user._id,
-        name: user.name,
-        email: user.email
+      ...complaint,
+      user: user ? { 
+        _id: user._id, 
+        name: user.name, 
+        email: user.email 
+      } : { 
+        _id: req.userId, 
+        name: 'Anonymous', 
+        email: '' 
       }
     };
 
@@ -157,25 +196,58 @@ router.get('/', auth, async (req, res) => {
 
     const query = {};
 
-    // Filter by user's complaints or all complaints for admin
-    const user = await User.findById(req.userId).select('role');
-    if (user && user.role === 'citizen') {
-      query.user = req.userId;
+    let complaints, total;
+
+    // Check if MongoDB is connected, otherwise use mock database
+    if (mongoose.connection.readyState === 1) {
+      // Use MongoDB
+      const user = await User.findById(req.userId).select('role');
+      if (user && user.role === 'citizen') {
+        query.user = req.userId;
+      }
+
+      // Apply filters
+      if (category) query.category = category;
+      if (status) query.status = status;
+      if (priority) query.priority = priority;
+
+      complaints = await Complaint.find(query)
+        .populate('user', 'name email')
+        .populate('assignedTo', 'name email')
+        .sort({ createdAt: -1 })
+        .limit(limit * 1)
+        .skip((page - 1) * limit);
+
+      total = await Complaint.countDocuments(query);
+    } else {
+      // Use mock database
+      const user = mockDB.findUserById(req.userId);
+      if (user && user.role === 'citizen') {
+        query.user = req.userId;
+      }
+
+      // Apply filters
+      if (category) query.category = category;
+      if (status) query.status = status;
+      if (priority) query.priority = priority;
+
+      const allComplaints = mockDB.findComplaints(query);
+      total = allComplaints.length;
+      
+      // Apply pagination
+      const startIndex = (page - 1) * limit;
+      const endIndex = startIndex + limit;
+      complaints = allComplaints.slice(startIndex, endIndex);
+      
+      // Populate user data for mock complaints
+      complaints = complaints.map(complaint => {
+        const user = mockDB.findUserById(complaint.user);
+        return {
+          ...complaint,
+          user: user ? { name: user.name, email: user.email } : { name: 'Anonymous', email: '' }
+        };
+      });
     }
-
-    // Apply filters
-    if (category) query.category = category;
-    if (status) query.status = status;
-    if (priority) query.priority = priority;
-
-    const complaints = await Complaint.find(query)
-      .populate('user', 'name email')
-      .populate('assignedTo', 'name email')
-      .sort({ createdAt: -1 })
-      .limit(limit * 1)
-      .skip((page - 1) * limit);
-
-    const total = await Complaint.countDocuments(query);
 
     res.json({
       complaints,
@@ -188,6 +260,72 @@ router.get('/', auth, async (req, res) => {
   } catch (error) {
     console.error('Get complaints error:', error);
     res.status(500).json({ message: 'Server error fetching complaints' });
+  }
+});
+
+// @route   GET /api/complaints/public
+// @desc    Get public complaints for community view
+// @access  Public
+router.get('/public', async (req, res) => {
+  try {
+    const {
+      page = 1,
+      limit = 20,
+      category,
+      status,
+      priority
+    } = req.query;
+
+    const query = {};
+
+    // Apply filters
+    if (category) query.category = category;
+    if (status) query.status = status;
+    if (priority) query.priority = priority;
+
+    let complaints, total;
+
+    // Check if MongoDB is connected, otherwise use mock database
+    if (mongoose.connection.readyState === 1) {
+      // Use MongoDB
+      complaints = await Complaint.find(query)
+        .populate('user', 'name email')
+        .sort({ createdAt: -1 })
+        .limit(limit * 1)
+        .skip((page - 1) * limit);
+
+      total = await Complaint.countDocuments(query);
+    } else {
+      // Use mock database
+      const allComplaints = mockDB.findComplaints(query);
+      total = allComplaints.length;
+      
+      // Apply pagination
+      const startIndex = (page - 1) * limit;
+      const endIndex = startIndex + limit;
+      complaints = allComplaints.slice(startIndex, endIndex);
+      
+      // Populate user data for mock complaints
+      complaints = complaints.map(complaint => {
+        const user = mockDB.findUserById(complaint.user);
+        return {
+          ...complaint,
+          user: user ? { name: user.name, email: user.email } : { name: 'Anonymous', email: '' }
+        };
+      });
+    }
+
+    res.json({
+      complaints,
+      pagination: {
+        current: parseInt(page),
+        pages: Math.ceil(total / limit),
+        total
+      }
+    });
+  } catch (error) {
+    console.error('Get public complaints error:', error);
+    res.status(500).json({ message: 'Server error fetching public complaints' });
   }
 });
 
