@@ -1,6 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import LeafletMap from '../components/LeafletMap';
+import IssueDetailsModal from '../components/IssueDetailsModal';
 import { 
   MapPin, 
   Users, 
@@ -26,6 +28,8 @@ const Home = () => {
     cities: 0,
     monitoring: 0
   });
+  const [selectedIssue, setSelectedIssue] = useState(null);
+  const [showIssueModal, setShowIssueModal] = useState(false);
   const statsRef = useRef(null);
 
   useEffect(() => {
@@ -82,6 +86,12 @@ const Home = () => {
     animateValue(0, 50, (value) => 
       setAnimatedStats(prev => ({ ...prev, cities: value }))
     );
+  };
+
+  // Handle issue click from map
+  const handleIssueClick = (issue) => {
+    setSelectedIssue(issue);
+    setShowIssueModal(true);
   };
 
   const features = [
@@ -344,6 +354,57 @@ const Home = () => {
         </div>
       </section>
 
+      {/* Real-time Issues Map Section */}
+      <section id="map-section" className="py-20 bg-gradient-to-br from-gray-50 via-blue-50/30 to-indigo-50/30 relative">
+        <div className="container mx-auto px-4">
+          <div className={`text-center mb-16 transform transition-all duration-1000 ${isVisible['map-section'] ? 'translate-y-0 opacity-100' : 'translate-y-8 opacity-0'}`}>
+            <div className="inline-flex items-center space-x-3 mb-6">
+              <MapPin className="w-6 h-6 text-blue-500 animate-pulse" />
+              <h2 className="text-3xl md:text-4xl font-bold text-gray-900">
+                Live Issues Map
+              </h2>
+              <MapPin className="w-6 h-6 text-blue-500 animate-pulse" />
+            </div>
+            <p className="text-xl text-gray-600 max-w-2xl mx-auto">
+              See all reported issues in real-time. Click on any marker to view details and track progress.
+            </p>
+          </div>
+
+          <div className="bg-white rounded-lg shadow-lg overflow-hidden">
+            <LeafletMap
+              onIssueClick={handleIssueClick}
+              selectedIssue={selectedIssue}
+              className="h-96"
+              isInteractive={false}
+            />
+          </div>
+
+          <div className="mt-8 text-center">
+            <p className="text-gray-600 mb-4">
+              Each marker represents a reported issue. Colors indicate priority levels.
+            </p>
+            <div className="flex flex-wrap justify-center gap-4 text-sm text-gray-500">
+              <div className="flex items-center">
+                <div className="w-3 h-3 rounded-full bg-red-500 mr-2"></div>
+                <span>Urgent</span>
+              </div>
+              <div className="flex items-center">
+                <div className="w-3 h-3 rounded-full bg-orange-500 mr-2"></div>
+                <span>High</span>
+              </div>
+              <div className="flex items-center">
+                <div className="w-3 h-3 rounded-full bg-yellow-500 mr-2"></div>
+                <span>Medium</span>
+              </div>
+              <div className="flex items-center">
+                <div className="w-3 h-3 rounded-full bg-green-500 mr-2"></div>
+                <span>Low</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
       {/* Stats Section */}
       <section id="stats-section" ref={statsRef} className="py-24 bg-gradient-to-br from-blue-600 via-indigo-700 to-purple-800 text-white relative overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-br from-blue-500/20 to-purple-500/20"></div>
@@ -435,6 +496,17 @@ const Home = () => {
           </div>
         </div>
       </section>
+
+      {/* Issue Details Modal */}
+      {showIssueModal && selectedIssue && (
+        <IssueDetailsModal
+          issue={selectedIssue}
+          onClose={() => {
+            setShowIssueModal(false);
+            setSelectedIssue(null);
+          }}
+        />
+      )}
     </div>
   );
 };

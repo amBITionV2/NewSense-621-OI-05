@@ -1,8 +1,8 @@
 import React from 'react';
 import { X, MapPin, Calendar, User, AlertCircle, Clock, CheckCircle, XCircle, Camera, Video } from 'lucide-react';
 
-const IssueDetailsModal = ({ issue, isOpen, onClose }) => {
-  if (!isOpen || !issue) return null;
+const IssueDetailsModal = ({ issue, onClose }) => {
+  if (!issue) return null;
 
   const formatDate = (dateString) => {
     return new Date(dateString).toLocaleDateString('en-US', {
