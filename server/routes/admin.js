@@ -388,7 +388,7 @@ router.get('/citizens', auth, async (req, res) => {
       limit = 10 
     } = req.query;
     
-    const query = { role: 'citizen' }; // Only fetch citizens
+    const query = {}; // Fetch all users from users collection
 
     // Apply filters
     if (gender) query.gender = gender;
@@ -505,10 +505,10 @@ router.get('/citizen-stats', auth, async (req, res) => {
       return res.status(403).json({ message: 'Access denied. Admin privileges required.' });
     }
 
-    const total = await User.countDocuments({ role: 'citizen' });
-    const verified = await User.countDocuments({ role: 'citizen', verificationStatus: 'approved' });
-    const pending = await User.countDocuments({ role: 'citizen', verificationStatus: 'pending' });
-    const active = await User.countDocuments({ role: 'citizen', isActive: true });
+    const total = await User.countDocuments({});
+    const verified = await User.countDocuments({ verificationStatus: 'approved' });
+    const pending = await User.countDocuments({ verificationStatus: 'pending' });
+    const active = await User.countDocuments({ isActive: true });
 
     res.json({ total, verified, pending, active });
   } catch (error) {
@@ -582,6 +582,113 @@ router.get('/citizens/export/csv', auth, async (req, res) => {
 
   } catch (error) {
     console.error('Error exporting citizens data:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
+// Get analytics data for charts
+router.get('/analytics', auth, async (req, res) => {
+  try {
+    if (req.userType !== 'admin') {
+      return res.status(403).json({ message: 'Access denied. Admin privileges required.' });
+    }
+
+    // Get all users for analytics
+    const users = await User.find({}).select('gender religion caste occupation dateOfBirth createdAt');
+
+    // Calculate age from date of birth
+    const calculateAge = (dateOfBirth) => {
+      if (!dateOfBirth) return null;
+      const today = new Date();
+      const birthDate = new Date(dateOfBirth);
+      let age = today.getFullYear() - birthDate.getFullYear();
+      const monthDiff = today.getMonth() - birthDate.getMonth();
+      if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+        age--;
+      }
+      return age;
+    };
+
+    // Gender distribution
+    const genderStats = users.reduce((acc, user) => {
+      const gender = user.gender || 'Not specified';
+      acc[gender] = (acc[gender] || 0) + 1;
+      return acc;
+    }, {});
+
+    // Religion distribution
+    const religionStats = users.reduce((acc, user) => {
+      const religion = user.religion || 'Not specified';
+      acc[religion] = (acc[religion] || 0) + 1;
+      return acc;
+    }, {});
+
+    // Caste distribution
+    const casteStats = users.reduce((acc, user) => {
+      const caste = user.caste || 'Not specified';
+      acc[caste] = (acc[caste] || 0) + 1;
+      return acc;
+    }, {});
+
+    // Age distribution
+    const ageStats = users.reduce((acc, user) => {
+      const age = calculateAge(user.dateOfBirth);
+      if (age === null) {
+        acc['Not specified'] = (acc['Not specified'] || 0) + 1;
+      } else if (age < 18) {
+        acc['Under 18'] = (acc['Under 18'] || 0) + 1;
+      } else if (age >= 18 && age < 25) {
+        acc['18-24'] = (acc['18-24'] || 0) + 1;
+      } else if (age >= 25 && age < 35) {
+        acc['25-34'] = (acc['25-34'] || 0) + 1;
+      } else if (age >= 35 && age < 45) {
+        acc['35-44'] = (acc['35-44'] || 0) + 1;
+      } else if (age >= 45 && age < 55) {
+        acc['45-54'] = (acc['45-54'] || 0) + 1;
+      } else if (age >= 55 && age < 65) {
+        acc['55-64'] = (acc['55-64'] || 0) + 1;
+      } else {
+        acc['65+'] = (acc['65+'] || 0) + 1;
+      }
+      return acc;
+    }, {});
+
+    // Occupation distribution
+    const occupationStats = users.reduce((acc, user) => {
+      const occupation = user.occupation || 'Not specified';
+      acc[occupation] = (acc[occupation] || 0) + 1;
+      return acc;
+    }, {});
+
+    // Registration trends (last 12 months)
+    const registrationTrends = {};
+    const currentDate = new Date();
+    for (let i = 11; i >= 0; i--) {
+      const date = new Date(currentDate.getFullYear(), currentDate.getMonth() - i, 1);
+      const monthKey = date.toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
+      registrationTrends[monthKey] = 0;
+    }
+
+    users.forEach(user => {
+      const userDate = new Date(user.createdAt);
+      const monthKey = userDate.toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
+      if (registrationTrends.hasOwnProperty(monthKey)) {
+        registrationTrends[monthKey]++;
+      }
+    });
+
+    res.json({
+      gender: genderStats,
+      religion: religionStats,
+      caste: casteStats,
+      age: ageStats,
+      occupation: occupationStats,
+      registrationTrends: registrationTrends,
+      totalUsers: users.length
+    });
+
+  } catch (error) {
+    console.error('Error fetching analytics data:', error);
     res.status(500).json({ message: 'Server error' });
   }
 });

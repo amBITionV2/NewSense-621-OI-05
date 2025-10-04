@@ -34,6 +34,7 @@ import {
 } from 'lucide-react';
 import LoadingSpinner from '../components/LoadingSpinner';
 import SkeletonLoader from '../components/SkeletonLoader';
+import Analytics from '../components/Analytics';
 import { useAuth } from '../context/AuthContext';
 
 const AdminDashboard = () => {
@@ -414,6 +415,20 @@ const AdminDashboard = () => {
               <Database className="w-4 h-4" />
               <span>Citizens</span>
               {activeTab === 'citizens' && (
+                <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+              )}
+            </button>
+            <button
+              onClick={() => setActiveTab('analytics')}
+              className={`flex items-center space-x-2 py-4 px-4 border-b-2 font-medium text-sm whitespace-nowrap transition-all duration-200 ${
+                activeTab === 'analytics'
+                  ? 'border-blue-500 text-blue-600 bg-blue-50'
+                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 hover:bg-gray-50'
+              }`}
+            >
+              <PieChart className="w-4 h-4" />
+              <span>Analytics</span>
+              {activeTab === 'analytics' && (
                 <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
               )}
             </button>
@@ -1851,6 +1866,11 @@ const AdminDashboard = () => {
               </div>
             </div>
           </div>
+        )}
+
+        {/* Analytics Tab */}
+        {activeTab === 'analytics' && (
+          <Analytics />
         )}
       </div>
     </div>
