@@ -72,9 +72,7 @@ const Navbar = () => {
                 <NavLink to="/videos" icon={Video}>
                   Learn
                 </NavLink>
-                <NavLink to="/translation" icon={Languages}>
-                  Translate
-                </NavLink>
+                
                 {user?.role === 'admin' && (
                   <NavLink to="/admin" icon={Shield}>
                     Admin
@@ -162,13 +160,7 @@ const Navbar = () => {
                   >
                     Learn
                   </NavLink>
-                  <NavLink 
-                    to="/translation" 
-                    icon={Languages}
-                    onClick={() => setIsMenuOpen(false)}
-                  >
-                    Translate
-                  </NavLink>
+                  
                   {user?.role === 'admin' && (
                     <NavLink 
                       to="/admin" 
