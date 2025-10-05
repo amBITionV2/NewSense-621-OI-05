@@ -9,7 +9,10 @@ import {
   Camera, 
   X, 
   Loader,
-  Mic
+  Mic,
+  AlertTriangle,
+  CheckCircle,
+  Eye
 } from 'lucide-react';
 
 // Define SpeechRecognition
@@ -78,6 +81,11 @@ const CreateComplaint = () => {
   const [hoveredCategory, setHoveredCategory] = useState(null);
   const [isListeningTitle, setIsListeningTitle] = useState(false);
   const [isListeningDesc, setIsListeningDesc] = useState(false);
+  const [duplicateCheck, setDuplicateCheck] = useState(null);
+  const [showDuplicateModal, setShowDuplicateModal] = useState(false);
+  const [checkingDuplicates, setCheckingDuplicates] = useState(false);
+  const [enhancingPriority, setEnhancingPriority] = useState(false);
+  const [priorityReason, setPriorityReason] = useState('');
 
   const categories = [
     { value: 'potholes', label: 'Potholes', description: 'Report damaged road surfaces, potholes, cracks, or uneven pavement that pose safety risks to vehicles and pedestrians. Include location details and severity of damage.' },
@@ -288,15 +296,72 @@ const CreateComplaint = () => {
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
+  const checkForDuplicates = async () => {
+    if (!formData.title.trim() || !formData.description.trim() || !formData.category) {
+      return true; // Allow submission if basic validation fails
+    }
 
-    if (!validateForm()) {
+    setCheckingDuplicates(true);
+    try {
+      const response = await axios.post('/api/complaints/check-duplicates', {
+        title: formData.title,
+        description: formData.description,
+        category: formData.category
+      }, {
+        params: { threshold: 0.8 }
+      });
+
+      setDuplicateCheck(response.data);
+      
+      if (response.data.isDuplicate) {
+        setShowDuplicateModal(true);
+        return false; // Prevent submission
+      }
+      
+      return true; // Allow submission
+    } catch (error) {
+      console.error('Duplicate check error:', error);
+      // Don't show error toast for duplicate check failures
+      // Just allow submission to proceed
+      return true; // Allow submission on error
+    } finally {
+      setCheckingDuplicates(false);
+    }
+  };
+
+  const handleSameComplaint = async (complaintId) => {
+    if (!priorityReason.trim()) {
+      toast.error('Please provide a reason for reporting the same complaint');
       return;
     }
 
-    setLoading(true);
+    setEnhancingPriority(true);
+    try {
+      const response = await axios.post(`/api/complaints/${complaintId}/enhance-priority`, {
+        reason: priorityReason
+      });
 
+      toast.success('Complaint priority enhanced successfully! Your report has been added to the existing complaint.');
+      setShowDuplicateModal(false);
+      setPriorityReason('');
+      navigate('/dashboard');
+    } catch (error) {
+      console.error('Enhance priority error:', error);
+      toast.error('Failed to enhance complaint priority');
+    } finally {
+      setEnhancingPriority(false);
+    }
+  };
+
+  const handleDifferentProblem = () => {
+    setShowDuplicateModal(false);
+    setPriorityReason('');
+    // Proceed with submission
+    setLoading(true);
+    submitComplaint();
+  };
+
+  const submitComplaint = async () => {
     try {
       const submitData = new FormData();
 
@@ -337,6 +402,23 @@ const CreateComplaint = () => {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+
+    if (!validateForm()) {
+      return;
+    }
+
+    // Check for duplicates first
+    const canSubmit = await checkForDuplicates();
+    if (!canSubmit) {
+      return; // Duplicate modal will be shown
+    }
+
+    setLoading(true);
+    await submitComplaint();
   };
 
   // Animation helpers
@@ -636,10 +718,15 @@ const CreateComplaint = () => {
               </button>
               <button
                 type="submit"
-                disabled={loading}
-                className={`${btnPrimary} ${loading ? 'opacity-60 cursor-not-allowed' : ''}`}
+                disabled={loading || checkingDuplicates}
+                className={`${btnPrimary} ${(loading || checkingDuplicates) ? 'opacity-60 cursor-not-allowed' : ''}`}
               >
-                {loading ? (
+                {checkingDuplicates ? (
+                  <>
+                    <Loader className="animate-spin inline mr-2" size={18} />
+                    Checking for duplicates...
+                  </>
+                ) : loading ? (
                   <>
                     <Loader className="animate-spin inline mr-2" size={18} />
                     Submitting...
@@ -652,6 +739,129 @@ const CreateComplaint = () => {
           </form>
         </div>
       </div>
+
+      {/* Enhanced Duplicate Detection Modal */}
+      {showDuplicateModal && duplicateCheck && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-3xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="p-6">
+              <div className="flex items-center mb-4">
+                <AlertTriangle className="text-orange-500 mr-3" size={24} />
+                <h2 className="text-2xl font-bold text-gray-800">Similar Complaint Found</h2>
+              </div>
+              
+              <div className="mb-6">
+                <p className="text-gray-600 mb-4">
+                  We found {duplicateCheck.similarComplaints.length} similar complaint(s) with a similarity score of {Math.round(duplicateCheck.highestSimilarity * 100)}%.
+                </p>
+                
+                <div className="space-y-4 mb-6">
+                  {duplicateCheck.similarComplaints.slice(0, 2).map((similar, index) => (
+                    <div key={index} className="border border-gray-200 rounded-lg p-4 bg-gray-50">
+                      <div className="flex justify-between items-start mb-2">
+                        <h3 className="font-semibold text-gray-800">{similar.complaint.title}</h3>
+                        <span className="text-sm text-orange-600 font-medium">
+                          {Math.round(similar.similarity * 100)}% similar
+                        </span>
+                      </div>
+                      <p className="text-gray-600 text-sm mb-2">{similar.complaint.description}</p>
+                      <div className="flex justify-between items-center text-xs text-gray-500">
+                        <span>Category: {similar.complaint.category}</span>
+                        <span>Posted: {new Date(similar.complaint.createdAt).toLocaleDateString()}</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Action Selection */}
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
+                  <h3 className="font-semibold text-blue-800 mb-3">What would you like to do?</h3>
+                  
+                  <div className="space-y-4">
+                    {/* Same Complaint Option */}
+                    <div className="border border-blue-200 rounded-lg p-4 bg-white">
+                      <div className="flex items-start space-x-3">
+                        <CheckCircle className="text-green-500 mt-1" size={20} />
+                        <div className="flex-1">
+                          <h4 className="font-semibold text-gray-800 mb-2">This is the same complaint</h4>
+                          <p className="text-sm text-gray-600 mb-3">
+                            If this is the same issue, we'll enhance the priority of the existing complaint instead of creating a duplicate.
+                          </p>
+                          <div className="space-y-3">
+                            <div>
+                              <label className="block text-sm font-medium text-gray-700 mb-1">
+                                Why are you reporting this again? (Required)
+                              </label>
+                              <textarea
+                                value={priorityReason}
+                                onChange={(e) => setPriorityReason(e.target.value)}
+                                placeholder="e.g., The issue has gotten worse, no action taken yet, etc."
+                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-400 focus:border-blue-400"
+                                rows={3}
+                              />
+                            </div>
+                            <button
+                              onClick={() => handleSameComplaint(duplicateCheck.similarComplaints[0].complaint._id)}
+                              disabled={enhancingPriority || !priorityReason.trim()}
+                              className="px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center space-x-2"
+                            >
+                              {enhancingPriority ? (
+                                <>
+                                  <Loader className="animate-spin" size={16} />
+                                  <span>Enhancing Priority...</span>
+                                </>
+                              ) : (
+                                <>
+                                  <CheckCircle size={16} />
+                                  <span>Same Complaint - Enhance Priority</span>
+                                </>
+                              )}
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Different Problem Option */}
+                    <div className="border border-orange-200 rounded-lg p-4 bg-white">
+                      <div className="flex items-start space-x-3">
+                        <AlertTriangle className="text-orange-500 mt-1" size={20} />
+                        <div className="flex-1">
+                          <h4 className="font-semibold text-gray-800 mb-2">This is a different problem</h4>
+                          <p className="text-sm text-gray-600 mb-3">
+                            If this is a different issue, we'll create a new complaint for you.
+                          </p>
+                          <button
+                            onClick={handleDifferentProblem}
+                            disabled={enhancingPriority}
+                            className="px-4 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center space-x-2"
+                          >
+                            <AlertTriangle size={16} />
+                            <span>Different Problem - Submit New Complaint</span>
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex justify-end">
+                <button
+                  onClick={() => {
+                    setShowDuplicateModal(false);
+                    setPriorityReason('');
+                  }}
+                  className="px-6 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Animation for tooltips */}
       <style>{`
         @keyframes fade-in {
