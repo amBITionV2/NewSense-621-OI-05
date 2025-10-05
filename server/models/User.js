@@ -29,7 +29,7 @@ const userSchema = new mongoose.Schema({
   },
   role: {
     type: String,
-    enum: ['citizen', 'admin', 'moderator'],
+    enum: ['citizen', 'admin', 'moderator', 'volunteer'],
     default: 'citizen'
   },
   // Aadhaar and Identity Information
@@ -142,6 +142,36 @@ const userSchema = new mongoose.Schema({
   lastLogin: {
     type: Date,
     default: Date.now
+  },
+  // Volunteer information (if user is also a volunteer)
+  volunteerInfo: {
+    volunteerId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Volunteer'
+    },
+    points: {
+      type: Number,
+      default: 0
+    },
+    badge: {
+      rank: {
+        type: String,
+        enum: ['bronze', 'silver', 'gold', 'platinum', 'diamond'],
+        default: 'bronze'
+      },
+      level: {
+        type: Number,
+        default: 1
+      }
+    },
+    totalTasksCompleted: {
+      type: Number,
+      default: 0
+    },
+    averageRating: {
+      type: Number,
+      default: 0
+    }
   }
 }, {
   timestamps: true

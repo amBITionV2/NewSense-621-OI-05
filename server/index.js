@@ -67,6 +67,8 @@ app.use('/api/auth', require('./routes/auth'));
 app.use('/api/complaints', require('./routes/complaints-simple'));
 app.use('/api/admin', require('./routes/admin'));
 app.use('/api/ai', require('./routes/ai'));
+app.use('/api/volunteers', require('./routes/volunteers'));
+app.use('/api/admin/volunteers', require('./routes/volunteer-admin'));
 
 // Socket.io for real-time updates
 io.on('connection', (socket) => {
@@ -87,8 +89,11 @@ app.set('io', io);
 
 // Error handling middleware
 app.use((err, req, res, next) => {
-  console.error(err.stack);
-  res.status(500).json({ message: 'Something went wrong!' });
+  console.error('Server error:', err.stack);
+  res.status(500).json({ 
+    message: 'Something went wrong!',
+    error: process.env.NODE_ENV === 'development' ? err.message : undefined
+  });
 });
 
 // 404 handler
@@ -96,9 +101,22 @@ app.use('*', (req, res) => {
   res.status(404).json({ message: 'Route not found' });
 });
 
+// Handle uncaught exceptions
+process.on('uncaughtException', (err) => {
+  console.error('Uncaught Exception:', err);
+  process.exit(1);
+});
+
+process.on('unhandledRejection', (err) => {
+  console.error('Unhandled Rejection:', err);
+  process.exit(1);
+});
+
 const PORT = config.PORT;
 server.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
+  console.log(`✅ Server running on port ${PORT}`);
+  console.log(`🌐 Client URL: ${config.CLIENT_URL}`);
+  console.log(`📊 Database: ${config.MONGODB_URI ? 'MongoDB' : 'Mock Database'}`);
 });
 
 module.exports = { app, io };

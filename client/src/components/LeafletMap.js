@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { MapContainer, TileLayer, Marker, Popup, useMapEvents } from 'react-leaflet';
+import { MapContainer, TileLayer, Marker, Popup, Circle, useMapEvents } from 'react-leaflet';
 import L from 'leaflet';
 import axios from 'axios';
 import config from '../config';
@@ -14,7 +14,7 @@ L.Icon.Default.mergeOptions({
   shadowUrl: require('leaflet/dist/images/marker-shadow.png'),
 });
 
-const LeafletMap = ({ onIssueClick, selectedIssue, className = '', isInteractive = true }) => {
+const LeafletMap = ({ onIssueClick, selectedIssue, className = '', isInteractive = true, sampleIssues = [], heatMapData = [], showHeatMap = false }) => {
   const [issues, setIssues] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -53,9 +53,12 @@ const LeafletMap = ({ onIssueClick, selectedIssue, className = '', isInteractive
     'closed': '#6b7280'
   };
 
-  // Get current location
+  // Get current location or use Bangalore for sample data
   useEffect(() => {
-    if (navigator.geolocation) {
+    if (sampleIssues.length > 0) {
+      // Use Bangalore coordinates for sample data
+      setCurrentLocation([12.9716, 77.5946]);
+    } else if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
         (position) => {
           setCurrentLocation([position.coords.latitude, position.coords.longitude]);
@@ -70,16 +73,38 @@ const LeafletMap = ({ onIssueClick, selectedIssue, className = '', isInteractive
       // Default to Delhi if geolocation is not supported
       setCurrentLocation([28.6139, 77.2090]);
     }
-  }, []);
+  }, [sampleIssues]);
 
-  // Fetch issues from API
+  // Fetch issues from API or use sample issues
   useEffect(() => {
     const fetchIssues = async () => {
       try {
         setLoading(true);
         setError(null);
-        const response = await axios.get(`${config.API_URL}/api/complaints/public`);
-        setIssues(response.data.complaints || []);
+        
+        // If sample issues are provided, use them instead of API
+        if (sampleIssues.length > 0) {
+          const formattedIssues = sampleIssues.map(issue => ({
+            _id: issue.id.toString(),
+            title: issue.title,
+            description: issue.description,
+            category: issue.category.toLowerCase().replace(/\s+/g, '-'),
+            priority: issue.priority,
+            status: issue.status,
+            location: {
+              coordinates: { lat: issue.location[0], lng: issue.location[1] },
+              address: `${issue.category}, Bangalore, India`
+            },
+            createdAt: issue.reportedAt,
+            reportedBy: issue.reportedBy,
+            isReal: issue.isReal
+          }));
+          setIssues(formattedIssues);
+          setError(null); // Remove the sample data message
+        } else {
+          const response = await axios.get(`${config.API_URL}/api/complaints/public`);
+          setIssues(response.data.complaints || []);
+        }
       } catch (error) {
         console.error('Error fetching issues:', error);
         // Set mock data for demo purposes when API fails
@@ -144,7 +169,7 @@ const LeafletMap = ({ onIssueClick, selectedIssue, className = '', isInteractive
     };
 
     fetchIssues();
-  }, []);
+  }, [sampleIssues]);
 
   // Create custom marker icon
   const createCustomIcon = (priority, category) => {
@@ -224,6 +249,38 @@ const LeafletMap = ({ onIssueClick, selectedIssue, className = '', isInteractive
 
   return (
     <div className={`relative ${className}`}>
+      <style>{`
+        .leaflet-popup {
+          z-index: 10000 !important;
+        }
+        .leaflet-popup-content-wrapper {
+          z-index: 10000 !important;
+        }
+        .leaflet-popup-tip {
+          z-index: 10000 !important;
+        }
+        .custom-popup {
+          z-index: 10000 !important;
+        }
+        .leaflet-container {
+          z-index: 1 !important;
+        }
+        .leaflet-map-pane {
+          z-index: 1 !important;
+        }
+        .leaflet-tile-pane {
+          z-index: 1 !important;
+        }
+        .leaflet-overlay-pane {
+          z-index: 2 !important;
+        }
+        .leaflet-marker-pane {
+          z-index: 3 !important;
+        }
+        .leaflet-popup-pane {
+          z-index: 10000 !important;
+        }
+      `}</style>
       {error && (
         <div className="absolute top-2 left-2 right-2 z-10 bg-yellow-100 border border-yellow-300 rounded-lg p-2 text-center">
           <p className="text-xs text-yellow-700">
@@ -233,8 +290,8 @@ const LeafletMap = ({ onIssueClick, selectedIssue, className = '', isInteractive
         </div>
       )}
       <MapContainer
-        center={currentLocation || [28.6139, 77.2090]}
-        zoom={13}
+        center={currentLocation || [12.9716, 77.5946]}
+        zoom={sampleIssues.length > 0 ? 11 : 13}
         style={{ height: '100%', width: '100%' }}
         className="rounded-lg"
       >
@@ -260,8 +317,47 @@ const LeafletMap = ({ onIssueClick, selectedIssue, className = '', isInteractive
           </Marker>
         )}
 
-        {/* Issue markers */}
-        {issues.map((issue) => {
+        {/* Heat map circles */}
+        {showHeatMap && heatMapData.map((heatPoint, index) => {
+          const radius = Math.max(300, heatPoint.complaints * 25); // Much larger radius based on complaint count
+          const opacity = heatPoint.intensity * 0.8;
+          const color = priorityColors[heatPoint.priority] || priorityColors['medium'];
+          
+          return (
+            <Circle
+              key={`heat-${index}`}
+              center={[heatPoint.lat, heatPoint.lng]}
+              radius={radius}
+              pathOptions={{
+                color: color,
+                fillColor: color,
+                fillOpacity: opacity,
+                weight: 4,
+                opacity: opacity
+              }}
+            >
+              <Popup>
+                <div className="p-2">
+                  <h3 className="font-semibold text-gray-900 mb-2">Complaint Density</h3>
+                  <p className="text-sm text-gray-600 mb-2">
+                    <strong>{heatPoint.complaints}</strong> complaints reported
+                  </p>
+                  <p className="text-sm text-gray-600 mb-2">
+                    Priority: <span className="font-medium" style={{ color: color }}>
+                      {heatPoint.priority.toUpperCase()}
+                    </span>
+                  </p>
+                  <p className="text-xs text-gray-500">
+                    Intensity: {(heatPoint.intensity * 100).toFixed(0)}%
+                  </p>
+                </div>
+              </Popup>
+            </Circle>
+          );
+        })}
+
+        {/* Issue markers - only show when heat map is off */}
+        {!showHeatMap && issues.map((issue) => {
           if (!issue.location || !issue.location.coordinates) return null;
           
           const position = [issue.location.coordinates.lat, issue.location.coordinates.lng];
@@ -280,25 +376,25 @@ const LeafletMap = ({ onIssueClick, selectedIssue, className = '', isInteractive
                 }
               }}
             >
-              <Popup>
-                <div className="p-2 max-w-xs">
-                  <div className="flex items-start space-x-2">
+              <Popup className="custom-popup" style={{ zIndex: 10000 }}>
+                <div className="p-3 max-w-xs">
+                  <div className="flex items-start space-x-3">
                     <div className="flex-shrink-0">
                       <div 
-                        className="w-6 h-6 rounded-full flex items-center justify-center text-sm"
+                        className="w-8 h-8 rounded-full flex items-center justify-center text-sm"
                         style={{ backgroundColor: categoryConfig[issue.category]?.bgColor }}
                       >
                         {categoryConfig[issue.category]?.icon}
                       </div>
                     </div>
                     <div className="flex-1 min-w-0">
-                      <h3 className="text-sm font-semibold text-gray-900 truncate">
+                      <h3 className="text-sm font-semibold text-gray-900 mb-1">
                         {issue.title}
                       </h3>
-                      <p className="text-xs text-gray-600 mt-1 line-clamp-2">
+                      <p className="text-xs text-gray-600 mb-2 line-clamp-2">
                         {issue.description}
                       </p>
-                      <div className="flex items-center space-x-2 mt-2">
+                      <div className="flex items-center space-x-2 mb-2">
                         <span 
                           className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium"
                           style={{ 
@@ -318,14 +414,15 @@ const LeafletMap = ({ onIssueClick, selectedIssue, className = '', isInteractive
                           {issue.priority.toUpperCase()}
                         </span>
                       </div>
-                      <div className="mt-2">
-                        <button 
-                          onClick={() => onIssueClick && onIssueClick(issue)}
-                          className="text-xs bg-blue-600 text-white px-2 py-1 rounded hover:bg-blue-700 transition-colors"
-                        >
-                          View Details
-                        </button>
+                      <div className="text-xs text-gray-500 mb-2">
+                        Reported by: {issue.reportedBy || 'Anonymous'}
                       </div>
+                      <button 
+                        onClick={() => onIssueClick && onIssueClick(issue)}
+                        className="w-full text-xs bg-blue-600 text-white px-3 py-2 rounded hover:bg-blue-700 transition-colors"
+                      >
+                        View Details
+                      </button>
                     </div>
                   </div>
                 </div>
@@ -337,24 +434,50 @@ const LeafletMap = ({ onIssueClick, selectedIssue, className = '', isInteractive
       
       {/* Map Legend */}
       <div className="absolute top-4 right-4 bg-white rounded-lg shadow-lg p-4 max-w-xs">
-        <h3 className="text-sm font-semibold text-gray-900 mb-3">Legend</h3>
+        <h3 className="text-sm font-semibold text-gray-900 mb-3">
+          {showHeatMap ? 'Heat Map Legend' : 'Issue Priority Legend'}
+        </h3>
         <div className="space-y-2">
-          <div className="flex items-center space-x-2">
-            <div className="w-3 h-3 rounded-full bg-red-500"></div>
-            <span className="text-xs text-gray-600">Urgent</span>
-          </div>
-          <div className="flex items-center space-x-2">
-            <div className="w-3 h-3 rounded-full bg-orange-500"></div>
-            <span className="text-xs text-gray-600">High</span>
-          </div>
-          <div className="flex items-center space-x-2">
-            <div className="w-3 h-3 rounded-full bg-yellow-500"></div>
-            <span className="text-xs text-gray-600">Medium</span>
-          </div>
-          <div className="flex items-center space-x-2">
-            <div className="w-3 h-3 rounded-full bg-green-500"></div>
-            <span className="text-xs text-gray-600">Low</span>
-          </div>
+          {showHeatMap ? (
+            <>
+              <div className="text-xs text-gray-500 mb-2">Complaint Density</div>
+              <div className="flex items-center space-x-2">
+                <div className="w-8 h-8 rounded-full bg-red-500 opacity-80"></div>
+                <span className="text-xs text-gray-600">High Density (15+ complaints)</span>
+              </div>
+              <div className="flex items-center space-x-2">
+                <div className="w-6 h-6 rounded-full bg-orange-500 opacity-70"></div>
+                <span className="text-xs text-gray-600">Medium Density (8-14 complaints)</span>
+              </div>
+              <div className="flex items-center space-x-2">
+                <div className="w-4 h-4 rounded-full bg-yellow-500 opacity-60"></div>
+                <span className="text-xs text-gray-600">Low Density (4-7 complaints)</span>
+              </div>
+              <div className="border-t border-gray-200 my-2"></div>
+              <div className="text-xs text-gray-500">Click circles for details</div>
+            </>
+          ) : (
+            <>
+              <div className="flex items-center space-x-2">
+                <div className="w-3 h-3 rounded-full bg-red-500"></div>
+                <span className="text-xs text-gray-600">Urgent</span>
+              </div>
+              <div className="flex items-center space-x-2">
+                <div className="w-3 h-3 rounded-full bg-orange-500"></div>
+                <span className="text-xs text-gray-600">High</span>
+              </div>
+              <div className="flex items-center space-x-2">
+                <div className="w-3 h-3 rounded-full bg-yellow-500"></div>
+                <span className="text-xs text-gray-600">Medium</span>
+              </div>
+              <div className="flex items-center space-x-2">
+                <div className="w-3 h-3 rounded-full bg-green-500"></div>
+                <span className="text-xs text-gray-600">Low</span>
+              </div>
+              <div className="border-t border-gray-200 my-2"></div>
+              <div className="text-xs text-gray-500">Click markers for details</div>
+            </>
+          )}
         </div>
       </div>
 

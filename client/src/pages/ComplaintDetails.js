@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import axios from 'axios';
-import { MapPin, Clock, User, ExternalLink } from 'lucide-react';
+import { MapPin, Clock, User, ExternalLink, TrendingUp, AlertCircle } from 'lucide-react';
 import LoadingSpinner from '../components/LoadingSpinner';
 
 const ComplaintDetails = () => {
@@ -85,6 +85,12 @@ const ComplaintDetails = () => {
                 <span className={`px-3 py-1 rounded-full text-sm font-medium ${getPriorityColor(complaint.priority)}`}>
                   {complaint.priority}
                 </span>
+                {complaint.updates && complaint.updates.some(update => update.status === 'priority-enhanced') && (
+                  <div className="flex items-center space-x-1 px-2 py-1 bg-green-100 text-green-800 rounded-full text-xs font-medium">
+                    <TrendingUp size={12} />
+                    <span>Priority Enhanced</span>
+                  </div>
+                )}
               </div>
             </div>
             <div className="text-right text-sm text-gray-500">

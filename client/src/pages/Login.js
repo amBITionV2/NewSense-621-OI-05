@@ -307,8 +307,8 @@ const Login = () => {
             <div className="mt-4 bg-gray-50 rounded-lg p-4">
               <p className="text-sm text-gray-600 mb-2">Try these demo accounts:</p>
               <div className="space-y-1 text-xs">
-                <div><strong>Citizen:</strong> citizen@demo.com / password123</div>
-                <div><strong>Admin:</strong> admin@demo.com / admin123</div>
+                <div><strong>Citizen:</strong> demo@example.com / password</div>
+                <div><strong>Admin:</strong> admin@example.com / password</div>
               </div>
             </div>
           </div>

@@ -13,7 +13,8 @@ import {
   Languages,
   Home,
   Plus,
-  Users
+  Users,
+  Heart
 } from 'lucide-react';
 
 const Navbar = () => {
@@ -22,6 +23,7 @@ const Navbar = () => {
   const location = useLocation();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
+
 
   const handleLogout = () => {
     logout();
@@ -84,6 +86,20 @@ const Navbar = () => {
                   Community
                 </NavLink>
                 
+                {/* Show volunteer section for citizens (non-admin, non-volunteer) */}
+                {user?.role !== 'admin' && user?.role !== 'volunteer' && (
+                  <NavLink to="/citizen/volunteer/register" icon={Heart}>
+                    Become a Volunteer
+                  </NavLink>
+                )}
+                
+                {/* Show volunteer dashboard for volunteers */}
+                {user?.role === 'volunteer' && (
+                  <NavLink to="/volunteer/dashboard" icon={Heart}>
+                    Volunteer Dashboard
+                  </NavLink>
+                )}
+                
                 {user?.role === 'admin' && (
                   <NavLink to="/admin" icon={Shield}>
                     Admin
@@ -94,6 +110,8 @@ const Navbar = () => {
               <>
                 <NavLink to="/login">Login</NavLink>
                 <NavLink to="/register">Register</NavLink>
+                <NavLink to="/volunteer/login">Volunteer Login</NavLink>
+                <NavLink to="/volunteer/register">Volunteer Register</NavLink>
               </>
             )}
           </div>
@@ -186,6 +204,28 @@ const Navbar = () => {
                     Community
                   </NavLink>
                   
+                  {/* Show volunteer section for citizens (non-admin, non-volunteer) */}
+                  {user?.role !== 'admin' && user?.role !== 'volunteer' && (
+                    <NavLink 
+                      to="/citizen/volunteer/register" 
+                      icon={Heart}
+                      onClick={() => setIsMenuOpen(false)}
+                    >
+                      Become a Volunteer
+                    </NavLink>
+                  )}
+                  
+                  {/* Show volunteer dashboard for volunteers */}
+                  {user?.role === 'volunteer' && (
+                    <NavLink 
+                      to="/volunteer/dashboard" 
+                      icon={Heart}
+                      onClick={() => setIsMenuOpen(false)}
+                    >
+                      Volunteer Dashboard
+                    </NavLink>
+                  )}
+                  
                   {user?.role === 'admin' && (
                     <NavLink 
                       to="/admin" 
@@ -222,6 +262,12 @@ const Navbar = () => {
                   </NavLink>
                   <NavLink to="/register" onClick={() => setIsMenuOpen(false)}>
                     Register
+                  </NavLink>
+                  <NavLink to="/volunteer/login" onClick={() => setIsMenuOpen(false)}>
+                    Volunteer Login
+                  </NavLink>
+                  <NavLink to="/volunteer/register" onClick={() => setIsMenuOpen(false)}>
+                    Volunteer Register
                   </NavLink>
                 </>
               )}

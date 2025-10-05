@@ -20,6 +20,12 @@ import Translation from './pages/Translation';
 import AdminDashboard from './pages/AdminDashboard';
 import Profile from './pages/Profile';
 import Community from './pages/Community';
+import VolunteerLogin from './pages/VolunteerLogin';
+import VolunteerRegister from './pages/VolunteerRegister';
+import VolunteerDashboard from './pages/VolunteerDashboard';
+import CitizenVolunteerRegister from './pages/CitizenVolunteerRegister';
+import AdminVolunteers from './pages/AdminVolunteers';
+import AdminVolunteerTasks from './pages/AdminVolunteerTasks';
 
 // Protected Route Component
 const ProtectedRoute = ({ children, adminOnly = false }) => {
@@ -86,6 +92,22 @@ function AppContent() {
                 </PublicRoute>
               } 
             />
+            <Route 
+              path="/volunteer/login" 
+              element={
+                <PublicRoute>
+                  <VolunteerLogin />
+                </PublicRoute>
+              } 
+            />
+            <Route 
+              path="/volunteer/register" 
+              element={
+                <PublicRoute>
+                  <VolunteerRegister />
+                </PublicRoute>
+              } 
+            />
 
             {/* Protected Routes */}
             <Route 
@@ -144,6 +166,22 @@ function AppContent() {
                 </ProtectedRoute>
               } 
             />
+            <Route 
+              path="/volunteer/dashboard" 
+              element={
+                <ProtectedRoute>
+                  <VolunteerDashboard />
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/citizen/volunteer/register" 
+              element={
+                <ProtectedRoute>
+                  <CitizenVolunteerRegister />
+                </ProtectedRoute>
+              } 
+            />
 
             {/* Admin Routes */}
             <Route 
@@ -151,6 +189,22 @@ function AppContent() {
               element={
                 <ProtectedRoute adminOnly={true}>
                   <AdminDashboard />
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/admin/volunteers" 
+              element={
+                <ProtectedRoute adminOnly={true}>
+                  <AdminVolunteers />
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/admin/volunteer-tasks" 
+              element={
+                <ProtectedRoute adminOnly={true}>
+                  <AdminVolunteerTasks />
                 </ProtectedRoute>
               } 
             />
