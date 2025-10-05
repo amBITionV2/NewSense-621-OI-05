@@ -1,17 +1,19 @@
-# NewSense-621-OI-05: AI-Powered Citizen Complaint Portal
+# NewSense-621-OI-05: AI-Powered Citizen Complaint Portal with Volunteer Management System
 
-An intelligent citizen complaint management system that leverages AI to automate civic issue reporting, social media engagement, and educational content generation. This project enables citizens to report civic issues with precise location mapping, automated social media posting, and continuous learning translation capabilities.
+An intelligent citizen complaint management system that leverages AI to automate civic issue reporting, social media engagement, educational content generation, and comprehensive volunteer management. This project enables citizens to report civic issues with precise location mapping, automated social media posting, continuous learning translation capabilities, and a gamified volunteer system for community engagement.
 
 ## 🎯 Project Overview
 
-NewSense-621-OI-05 is a comprehensive civic engagement platform that combines cutting-edge AI technology with user-friendly design to create a powerful tool for community improvement. The system empowers citizens to actively participate in civic life while providing administrators with the tools they need to respond effectively to community needs.
+NewSense-621-OI-05 is a comprehensive civic engagement platform that combines cutting-edge AI technology with user-friendly design to create a powerful tool for community improvement. The system empowers citizens to actively participate in civic life through complaint reporting and volunteer opportunities while providing administrators with the tools they need to respond effectively to community needs.
 
 ### 🌟 Key Highlights
 - **AI-Powered Automation**: Intelligent complaint processing and social media management
+- **Volunteer Management System**: Complete gamified volunteer platform with points, badges, and achievements
 - **Real-time Analytics**: Comprehensive dashboard with demographic insights and trend analysis
 - **Educational Integration**: Curated YouTube videos promoting civic responsibility
 - **Multi-language Support**: Smart translation system that learns from user feedback
 - **Community Engagement**: Interactive maps and social features for community building
+- **Government Intelligence**: Advanced citizen database with demographic analytics
 
 ## 🚀 Live Demo
 
@@ -21,6 +23,7 @@ NewSense-621-OI-05 is a comprehensive civic engagement platform that combines cu
 ### Demo Credentials
 - **Citizen**: `demo@example.com` / `password`
 - **Admin**: `admin@example.com` / `password`
+- **Volunteer**: Register through the volunteer registration page
 
 ## 🌟 Features
 
@@ -34,6 +37,34 @@ NewSense-621-OI-05 is a comprehensive civic engagement platform that combines cu
 - **Real-time Analytics**: Comprehensive dashboard with demographic insights and trend analysis
 - **Interactive Maps**: Live issue tracking with color-coded priority levels
 - **Mobile Responsive**: Optimized for all devices with touch-friendly interface
+
+### 🎮 Volunteer Management System
+
+#### **Volunteer Registration & Management**
+- **Multi-step Registration**: Comprehensive volunteer registration with skills, interests, and availability
+- **Citizen-Volunteer Integration**: Citizens can register as volunteers while maintaining their citizen status
+- **Admin Volunteer Management**: Complete admin interface for volunteer verification and management
+- **Profile Management**: Detailed volunteer profiles with skills, experience, and preferences
+
+#### **Gamification System**
+- **Points System**: Volunteers earn 10-25 points per task based on complexity and performance
+- **Badge Progression**: Bronze → Silver → Gold → Platinum → Diamond ranks based on points
+- **Achievement System**: Special achievements for milestones and exceptional performance
+- **Rating System**: 5-star rating system that affects badge progression
+- **Visual Recognition**: Beautiful badge displays with icons and color-coded ranks
+
+#### **Task Management**
+- **Admin Task Creation**: Admins can create custom volunteer tasks with detailed requirements
+- **Complaint-to-Task Conversion**: Citizen complaints automatically become volunteer opportunities
+- **Hardcoded Community Tasks**: 8+ pre-defined community service tasks always available
+- **Task Filtering**: Advanced filtering by category, priority, location, and skills
+- **Task Assignment**: Volunteers can apply for tasks and track their progress
+
+#### **Volunteer Dashboard Features**
+- **Performance Tracking**: Points, badges, achievements, and task completion statistics
+- **Available Tasks**: Browse and apply for volunteer opportunities
+- **Progress Visualization**: Visual progress bars and achievement tracking
+- **Task History**: Complete history of completed tasks and ratings received
 
 ### Complaint Management
 - **Categorized Reporting**: Report potholes, garbage issues, street lighting, water supply, sewage, traffic signals, and more
@@ -79,6 +110,8 @@ NewSense-621-OI-05 is a comprehensive civic engagement platform that combines cu
 - **Leaflet**: Interactive maps for location-based features
 - **Axios**: HTTP client for API communication
 - **React Router**: Client-side routing and navigation
+- **Framer Motion**: Smooth animations and transitions
+- **React Hot Toast**: User-friendly notifications
 
 ### Backend
 - **Node.js & Express**: Server-side JavaScript runtime and web framework
@@ -87,6 +120,9 @@ NewSense-621-OI-05 is a comprehensive civic engagement platform that combines cu
 - **JWT**: JSON Web Tokens for secure authentication
 - **bcrypt**: Password hashing for security
 - **Multer**: File upload handling for media attachments
+- **Express Rate Limit**: API rate limiting for security
+- **Helmet**: Security headers middleware
+- **Express Validator**: Input validation and sanitization
 
 ### AI & Integration
 - **OpenAI API**: AI-powered content generation and translation
@@ -94,6 +130,8 @@ NewSense-621-OI-05 is a comprehensive civic engagement platform that combines cu
 - **Twitter API**: Social media automation
 - **Instagram API**: Visual content sharing
 - **YouTube API**: Educational video integration
+- **Google Generative AI**: Advanced AI capabilities
+- **Transformers.js**: Client-side AI processing
 
 ### Development Tools
 - **Concurrently**: Run multiple npm scripts simultaneously
@@ -115,7 +153,7 @@ NewSense-621-OI-05 is a comprehensive civic engagement platform that combines cu
 1. **Clone the repository**
    ```bash
    git clone <repository-url>
-   cd citizen-complaint-portal
+   cd NewSense-621-OI-05
    ```
 
 2. **Install dependencies**
@@ -146,7 +184,13 @@ NewSense-621-OI-05 is a comprehensive civic engagement platform that combines cu
    echo "REACT_APP_GOOGLE_MAPS_API_KEY=your-google-maps-api-key" > client/.env
    ```
 
-5. **Start the development servers**
+5. **Populate sample data**
+   ```bash
+   cd server
+   node scripts/populateVolunteerData.js
+   ```
+
+6. **Start the development servers**
 
    **For Windows PowerShell:**
    ```powershell
@@ -171,23 +215,77 @@ NewSense-621-OI-05 is a comprehensive civic engagement platform that combines cu
 ## 📁 Project Structure
 
 ```
-citizen-complaint-portal/
+NewSense-621-OI-05/
 ├── client/                 # React frontend
 │   ├── public/
 │   ├── src/
 │   │   ├── components/     # Reusable UI components
+│   │   │   ├── Analytics.js
+│   │   │   ├── Footer.js
+│   │   │   ├── IssueDetailsModal.js
+│   │   │   ├── LeafletMap.js
+│   │   │   ├── LoadingSpinner.js
+│   │   │   ├── Navbar.js
+│   │   │   └── SkeletonLoader.js
 │   │   ├── context/       # React context for state management
+│   │   │   └── AuthContext.js
 │   │   ├── pages/         # Page components
-│   │   └── utils/         # Utility functions
+│   │   │   ├── AdminDashboard.js
+│   │   │   ├── AdminVolunteers.js
+│   │   │   ├── AdminVolunteerTasks.js
+│   │   │   ├── CitizenVolunteerRegister.js
+│   │   │   ├── Community.js
+│   │   │   ├── ComplaintDetails.js
+│   │   │   ├── CreateComplaint.js
+│   │   │   ├── Dashboard.js
+│   │   │   ├── EducationalVideos.js
+│   │   │   ├── Home.js
+│   │   │   ├── Login.js
+│   │   │   ├── Profile.js
+│   │   │   ├── Register.js
+│   │   │   ├── Translation.js
+│   │   │   ├── VolunteerDashboard.js
+│   │   │   ├── VolunteerLogin.js
+│   │   │   └── VolunteerRegister.js
+│   │   ├── config.js
+│   │   ├── index.css
+│   │   └── index.js
 │   └── package.json
 ├── server/                 # Node.js backend
 │   ├── models/            # MongoDB models
+│   │   ├── Admin.js
+│   │   ├── Complaint.js
+│   │   ├── EducationalVideo.js
+│   │   ├── Translation.js
+│   │   ├── User.js
+│   │   ├── Volunteer.js
+│   │   └── VolunteerTask.js
 │   ├── routes/            # API routes
+│   │   ├── admin.js
+│   │   ├── ai.js
+│   │   ├── auth.js
+│   │   ├── complaints.js
+│   │   ├── volunteer-admin.js
+│   │   └── volunteers.js
 │   ├── services/          # Business logic services
+│   │   ├── duplicateDetectionService.js
+│   │   ├── educationalVideoService.js
+│   │   ├── geminiVeoService.js
+│   │   ├── socialMediaService.js
+│   │   ├── translationService.js
+│   │   └── youtubeVideoService.js
 │   ├── middleware/        # Express middleware
+│   │   └── auth.js
 │   ├── utils/             # Utility functions
+│   │   └── cloudinary.js
+│   ├── scripts/           # Database scripts
+│   │   └── populateVolunteerData.js
+│   ├── uploads/           # File uploads
+│   ├── index.js
 │   └── package.json
-└── package.json           # Root package.json
+├── VOLUNTEER_SYSTEM_SUMMARY.md
+├── package.json           # Root package.json
+└── README.md
 ```
 
 ## 🔧 API Endpoints
@@ -206,6 +304,25 @@ citizen-complaint-portal/
 - `PUT /api/complaints/:id/status` - Update complaint status
 - `POST /api/complaints/:id/feedback` - Submit feedback
 
+### Volunteer Management
+- `POST /api/volunteers/register` - Register as volunteer
+- `POST /api/volunteers/login` - Volunteer login
+- `GET /api/volunteers/profile` - Get volunteer profile
+- `PUT /api/volunteers/profile` - Update volunteer profile
+- `GET /api/volunteers/tasks` - Get available tasks
+- `GET /api/volunteers/my-tasks` - Get assigned tasks
+- `POST /api/volunteers/tasks/:id/apply` - Apply for task
+- `PUT /api/volunteers/tasks/:id/status` - Update task status
+
+### Admin Volunteer Management
+- `GET /api/admin/volunteers` - Get all volunteers
+- `GET /api/admin/volunteers/:id` - Get volunteer details
+- `PUT /api/admin/volunteers/:id/status` - Update volunteer status
+- `PUT /api/admin/volunteers/:id/verification` - Update verification status
+- `POST /api/admin/volunteers/volunteer-tasks` - Create volunteer task
+- `GET /api/admin/volunteers/volunteer-tasks` - Get all volunteer tasks
+- `PUT /api/admin/volunteers/volunteer-tasks/:id` - Update volunteer task
+
 ### AI Services
 - `POST /api/ai/translate` - Translate text
 - `POST /api/ai/translate/feedback` - Provide translation feedback
@@ -216,251 +333,57 @@ citizen-complaint-portal/
 
 ### Admin
 - `GET /api/admin/dashboard` - Admin dashboard statistics
-- `GET /api/admin/complaints` - Get all complaints
-- `PUT /api/admin/complaints/:id/assign` - Assign complaint
+- `GET /api/admin/complaints` - Get complaints (admin view)
 - `GET /api/admin/users` - Get all users
-- `PUT /api/admin/users/:id/status` - Update user status
-- `GET /api/admin/analytics` - Get comprehensive analytics
+- `GET /api/admin/citizens` - Get citizen demographics
+- `GET /api/admin/citizen-stats` - Get citizen statistics
 
-## 🗄️ Database Schema
+## 🎮 Volunteer System Features
 
-### Users
-- Personal information (name, email, phone)
-- Location data
-- Role-based access (citizen, admin, moderator)
-- Preferences and settings
+### **Gamification System**
+- **Points System**: 
+  - Base points: 10 per task
+  - Rating bonus: 2-10 points (based on 1-5 star rating)
+  - Priority bonus: 5-15 points (based on task priority)
+  - Hours bonus: 2 points per hour worked
 
-### Complaints
-- Issue details (title, description, category, priority)
-- Location with coordinates
-- Media attachments
-- Status tracking and updates
-- Social media posts
-- User feedback and ratings
+- **Badge Progression**:
+  - **Bronze**: 0-99 points
+  - **Silver**: 100-199 points
+  - **Gold**: 200-299 points
+  - **Platinum**: 300-399 points
+  - **Diamond**: 400+ points
 
-### Translations
-- Original and translated text
-- Language pairs
-- User feedback for learning
-- Accuracy tracking
+- **Achievements**:
+  - First Task (Complete 1 task)
+  - Task Master (Complete 10 tasks)
+  - High Performer (Average rating 4.5+)
+  - Point Collector (Earn 100+ points)
+  - Community Helper (Complete 5 community service tasks)
 
-### Educational Videos
-- AI-generated content
-- Categories and tags
-- User engagement metrics
-- Multi-language support
+### **Sample Data**
+- **5 Pre-populated Volunteers** with different ranks and achievements
+- **5 Database-stored Volunteer Tasks**
+- **8+ Hardcoded Community Service Tasks** always available
 
-## 🤖 AI Integration
+## 📊 Sample Data Overview
 
-### OpenAI Integration
-- **Content Generation**: Social media posts and educational content
-- **Translation**: Multi-language support with context learning
-- **Text Processing**: Complaint categorization and summarization
+### **Volunteers (5)**
+1. **John Smith** - Silver Badge (150 points, 8 tasks)
+2. **Sarah Johnson** - Gold Badge (320 points, 15 tasks)
+3. **Mike Chen** - Gold Badge (450 points, 22 tasks)
+4. **Emily Davis** - Bronze Badge (80 points, 4 tasks)
+5. **David Wilson** - Pending Approval (0 points, 0 tasks)
 
-### YouTube Video Integration
-- **Educational Content**: Curated YouTube videos about civic responsibility
-- **Embedded Players**: Direct YouTube video playback in the application
-- **Categorized Content**: Videos organized by civic sense topics
-
-### Social Media Automation
-- **Twitter**: Automated posting with AI-generated content
-- **Instagram**: Visual content with captions
-- **Scheduling**: Recurring posts for unresolved issues
-
-### Continuous Learning
-- **Translation Feedback**: User corrections improve AI accuracy
-- **Content Optimization**: Social media engagement drives content improvement
-- **Pattern Recognition**: Issue categorization becomes more accurate over time
-
-## 🎨 UI/UX Features
-
-### Modern Design
-- **Responsive Layout**: Works on desktop, tablet, and mobile
-- **Dark/Light Themes**: User preference support
-- **Accessibility**: WCAG compliant design
-- **Interactive Maps**: Google Maps integration for location selection
-
-### User Experience
-- **Real-time Updates**: Socket.io for live notifications
-- **File Upload**: Drag-and-drop media upload
-- **Progress Tracking**: Visual status indicators
-- **Multi-language**: Support for multiple languages
-- **Community Engagement**: Interactive community feed with voting and comments
-- **Debug Tools**: Built-in debugging tools for development and troubleshooting
-- **Refresh Functionality**: Manual refresh to see latest community reports
-
-## 🌐 Community Features
-
-### Community Feed
-- **Mixed Content**: Combines 12 hardcoded sample posts with real user reports
-- **Live Report Indicators**: Green "Live Report" badges distinguish real user submissions
-- **Interactive Engagement**: Voting, commenting, and sharing functionality
-- **Category Filtering**: Filter posts by issue categories (potholes, garbage, street lighting, etc.)
-- **Search Functionality**: Search through posts by title and description
-- **Real-time Updates**: Refresh button to see latest community reports
-
-### Report Visibility
-- **Public API Endpoint**: `/api/complaints/public` for community data access
-- **Automatic Integration**: User reports automatically appear in community feed
-- **Visual Distinction**: Clear indicators between sample data and real reports
-- **Fallback Support**: Works with both MongoDB and mock database
-
-### Debug Tools
-- **Console Logging**: Comprehensive debugging information in browser console
-- **Debug Button**: Green debug button to inspect post data and filtering
-- **API Monitoring**: Real-time API call logging and error reporting
-- **Data Validation**: Automatic data structure validation and transformation
-
-## 🔒 Security Features
-
-- **JWT Authentication**: Secure token-based authentication
-- **Input Validation**: Comprehensive form validation
-- **Rate Limiting**: API rate limiting to prevent abuse
-- **Helmet.js**: Security headers
-- **CORS Configuration**: Proper cross-origin resource sharing
-- **Password Hashing**: bcrypt for secure password storage
-
-## 📊 Analytics & Reporting
-
-### Dashboard Metrics
-- Total complaints and resolution rates
-- Category-wise distribution
-- User engagement statistics
-- AI performance metrics
-
-### Real-time Monitoring
-- Live complaint tracking
-- Social media engagement
-- Translation accuracy
-- Video viewership
-
-## 🚀 Deployment
-
-### Production Build
-```bash
-# Build the React app
-cd client && npm run build
-
-# Start production server
-cd server && npm start
-```
-
-### Environment Variables for Production
-- Set up MongoDB Atlas or production MongoDB instance
-- Configure production API keys
-- Set up proper CORS origins
-- Configure SSL certificates
-
-## 🤝 Contributing
-
-1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add some amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
-
-## 📝 License
-
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
-## 🆘 Support
-
-For support, email support@citizenportal.com or create an issue in the repository.
-
-## 🔧 Troubleshooting
-
-### Community Reports Not Showing
-
-If user reports are not appearing in the community section:
-
-1. **Check Browser Console** (F12 → Console tab):
-   - Look for API call logs: "Fetching complaints from: http://localhost:5000/api/complaints/public"
-   - Check for error messages or CORS issues
-   - Verify data transformation logs
-
-2. **Use Debug Tools**:
-   - Click the green "Debug" button in the community page header
-   - Check console output for post counts and data structure
-   - Verify API response contains complaint data
-
-3. **Verify Server Status**:
-   - Ensure backend server is running on port 5000
-   - Ensure frontend server is running on port 3000
-   - Test API endpoint directly: `http://localhost:5000/api/complaints/public`
-
-4. **Check Data Flow**:
-   - Reports should appear with "Live Report" green badge
-   - Sample data (12 posts) should always be visible
-   - Real reports are added to the existing sample data
-
-### Common Issues
-
-- **CORS Errors**: Ensure server CORS configuration allows localhost:3000
-- **API Connection**: Verify both servers are running and accessible
-- **Data Transformation**: Check console logs for data structure issues
-- **Filtering**: Ensure reports match selected category filter
-
-### Debug Console Commands
-
-```javascript
-// Check current posts
-console.log('Current posts:', posts.length);
-
-// Check filtered posts
-console.log('Filtered posts:', filteredPosts.length);
-
-// Check API response
-fetch('http://localhost:5000/api/complaints/public')
-  .then(res => res.json())
-  .then(data => console.log('API Response:', data));
-```
-
-## 🆕 Recent Updates
-
-### Community Integration (Latest)
-- ✅ **Public API Endpoint**: Added `/api/complaints/public` for community data access
-- ✅ **Mixed Content Feed**: Combines 12 hardcoded sample posts with real user reports
-- ✅ **Live Report Indicators**: Visual badges distinguish real user submissions
-- ✅ **Debug Tools**: Comprehensive debugging tools for development and troubleshooting
-- ✅ **Refresh Functionality**: Manual refresh to see latest community reports
-- ✅ **Fallback Support**: Works with both MongoDB and mock database
-- ✅ **Voice-to-Text**: Speech recognition for complaint submission in multiple languages
-
-### Technical Improvements
-- ✅ **Enhanced Error Handling**: Better error messages and fallback mechanisms
-- ✅ **Console Logging**: Detailed debugging information for development
-- ✅ **Data Transformation**: Robust data structure handling for API responses
-- ✅ **CORS Configuration**: Proper cross-origin resource sharing setup
-- ✅ **PowerShell Support**: Windows PowerShell command compatibility
-
-## 🤖 AI-Powered Content Intelligence
-
-### Advanced NLP Models
-The platform incorporates sophisticated **Natural Language Processing** capabilities to ensure data quality and prevent abuse:
-
-#### **Spam Detection System**
-- **AI-Powered Filtering**: 95% accuracy in identifying spam reports using advanced NLP models
-- **Real-time Analysis**: Instant content analysis and classification
-- **Automated Blocking**: Automatic filtering of suspicious or irrelevant content
-- **Learning Algorithm**: Continuously improves detection accuracy through machine learning
-
-#### **Duplicate Prevention**
-- **Content Similarity Analysis**: 90% effectiveness in detecting duplicate reports
-- **Intelligent Consolidation**: Automatically merges related complaints for efficient processing
-- **Location-based Matching**: Identifies similar issues in the same geographic area
-- **Time-based Detection**: Prevents duplicate submissions within specified timeframes
-
-#### **Content Quality Assurance**
-- **Automated Validation**: Ensures reports meet minimum quality standards
-- **Quality Scoring**: 85% accuracy in content quality assessment
-- **Standards Compliance**: Validates reports against government guidelines
-- **Actionable Information**: Ensures reports contain sufficient detail for resolution
-
-#### **Performance Metrics**
-- **95% Spam Detection Accuracy**: Advanced NLP models identify and filter spam
-- **90% Duplicate Prevention**: Intelligent content similarity analysis
-- **85% Content Quality Score**: Automated validation and quality assessment
-- **Real-time Processing**: Instant analysis and classification of reports
+### **Hardcoded Community Tasks (8)**
+1. **Community Garden Maintenance** (Community Service)
+2. **Senior Center Meal Service** (Healthcare)
+3. **Environmental Cleanup Drive** (Environment)
+4. **Digital Literacy Workshop** (Education)
+5. **Food Bank Distribution** (Social Work)
+6. **Emergency Shelter Support** (Social Work - Urgent)
+7. **Youth Mentorship Program** (Education)
+8. **Disaster Relief Preparation** (Disaster Relief)
 
 ## 🏛️ Government Database Management System
 
@@ -499,6 +422,14 @@ The platform serves as a powerful **Government Intelligence System** with detail
 - **Education**: Access to curated civic responsibility content
 - **Community**: Connect with like-minded citizens and local issues
 - **Efficiency**: AI-powered automation reduces manual effort
+- **Volunteer Opportunities**: Gamified system encourages community participation
+
+### For Volunteers
+- **Recognition**: Badge system provides status and recognition
+- **Engagement**: Gamification encourages volunteer participation
+- **Skill Development**: Diverse tasks help volunteers develop new skills
+- **Community Impact**: Track and measure volunteer contributions
+- **Flexibility**: Choose tasks that match interests and availability
 
 ### For Government & Administrators
 - **Citizen Database**: Comprehensive demographic data (age, gender, religion, caste, occupation, location)
@@ -509,6 +440,7 @@ The platform serves as a powerful **Government Intelligence System** with detail
 - **Performance Metrics**: Resolution rates, response times, and citizen satisfaction tracking
 - **Data Export**: Comprehensive reports for government agencies and policy makers
 - **Scalability**: Handle large volumes of citizen data efficiently
+- **Volunteer Management**: Complete oversight of volunteer system and community engagement
 
 ### For Communities
 - **Awareness**: Educational content promotes civic responsibility
@@ -516,6 +448,7 @@ The platform serves as a powerful **Government Intelligence System** with detail
 - **Transparency**: Public visibility of community issues and resolutions
 - **Collaboration**: Platform for community-driven problem solving
 - **Progress**: Measurable improvement in civic infrastructure
+- **Volunteer Network**: Strong community of engaged volunteers
 
 ## 🔮 Future Enhancements
 
@@ -526,10 +459,30 @@ The platform serves as a powerful **Government Intelligence System** with detail
 - **IoT Integration**: Smart city sensor data integration
 - **Advanced Analytics**: Machine learning for predictive insights
 - **Real-time Notifications**: Push notifications for community updates
-- **Advanced Filtering**: More sophisticated filtering and search options
-- **AI Chatbot**: Intelligent assistant for user support
-- **Gamification**: Points and rewards for civic participation
+- **Volunteer Matching**: AI-powered volunteer-task matching
+- **Social Features**: Volunteer networking and team formation
+- **Advanced Gamification**: More achievement types and social recognition
+
+## 🤝 Contributing
+
+1. Fork the repository
+2. Create a feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit your changes (`git commit -m 'Add some amazing feature'`)
+4. Push to the branch (`git push origin feature/amazing-feature`)
+5. Open a Pull Request
+
+## 📄 License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+## 🙏 Acknowledgments
+
+- OpenAI for AI capabilities
+- Google Maps for location services
+- MongoDB for database services
+- React community for excellent documentation
+- All contributors and volunteers who make this project possible
 
 ---
 
-Built with ❤️ for better communities 
+**NewSense-621-OI-05** - Empowering communities through technology and civic engagement! 🚀
