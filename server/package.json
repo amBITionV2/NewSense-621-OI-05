@@ -8,11 +8,8 @@
     "dev": "nodemon index.js"
   },
   "dependencies": {
-<<<<<<< Updated upstream
     "@google/generative-ai": "^0.24.1",
-=======
     "@xenova/transformers": "^2.17.2",
->>>>>>> Stashed changes
     "axios": "^1.12.2",
     "bcryptjs": "^2.4.3",
     "cors": "^2.8.5",

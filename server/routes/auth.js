@@ -421,10 +421,14 @@ router.post('/login', [
     }
 
     // Fallback to mockDB
+    console.log('Checking mockDB for email:', email);
+    console.log('Available users in mockDB:', mockDB.users.map(u => ({ email: u.email, name: u.name })));
     const user = mockDB.findUserByEmail(email);
     if (!user) {
+      console.log('User not found in mockDB');
       return res.status(400).json({ message: 'Invalid credentials' });
     }
+    console.log('User found:', { email: user.email, name: user.name, hasPassword: !!user.password });
 
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) {

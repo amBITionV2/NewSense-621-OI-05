@@ -709,4 +709,135 @@ router.get('/analytics', auth, async (req, res) => {
   }
 });
 
+// @route   GET /api/admin/analytics
+// @desc    Get analytics data for dashboard
+// @access  Private (Admin only)
+router.get('/analytics', auth, async (req, res) => {
+  try {
+    // Check if user is admin
+    if (req.userType !== 'admin') {
+      return res.status(403).json({ message: 'Access denied. Admin privileges required.' });
+    }
+
+    // Get total users
+    const totalUsers = await User.countDocuments();
+
+    // Get gender distribution
+    const genderStats = await User.aggregate([
+      { $group: { _id: '$gender', count: { $sum: 1 } } },
+      { $sort: { count: -1 } }
+    ]);
+    const gender = {};
+    genderStats.forEach(stat => {
+      gender[stat._id || 'Not specified'] = stat.count;
+    });
+
+    // Get religion distribution
+    const religionStats = await User.aggregate([
+      { $group: { _id: '$religion', count: { $sum: 1 } } },
+      { $sort: { count: -1 } }
+    ]);
+    const religion = {};
+    religionStats.forEach(stat => {
+      religion[stat._id || 'Not specified'] = stat.count;
+    });
+
+    // Get caste distribution
+    const casteStats = await User.aggregate([
+      { $group: { _id: '$caste', count: { $sum: 1 } } },
+      { $sort: { count: -1 } }
+    ]);
+    const caste = {};
+    casteStats.forEach(stat => {
+      caste[stat._id || 'Not specified'] = stat.count;
+    });
+
+    // Get occupation distribution
+    const occupationStats = await User.aggregate([
+      { $group: { _id: '$occupation', count: { $sum: 1 } } },
+      { $sort: { count: -1 } }
+    ]);
+    const occupation = {};
+    occupationStats.forEach(stat => {
+      occupation[stat._id || 'Not specified'] = stat.count;
+    });
+
+    // Get age distribution (group by age ranges)
+    const ageStats = await User.aggregate([
+      {
+        $addFields: {
+          age: {
+            $divide: [
+              { $subtract: [new Date(), '$dateOfBirth'] },
+              365.25 * 24 * 60 * 60 * 1000
+            ]
+          }
+        }
+      },
+      {
+        $bucket: {
+          groupBy: '$age',
+          boundaries: [0, 18, 25, 35, 45, 55, 65, 100],
+          default: '65+',
+          output: { count: { $sum: 1 } }
+        }
+      }
+    ]);
+    const age = {};
+    ageStats.forEach(stat => {
+      const range = stat._id === '65+' ? '65+' : `${stat._id}-${stat._id + 10}`;
+      age[range] = stat.count;
+    });
+
+    // Get registration trends (last 12 months)
+    const twelveMonthsAgo = new Date();
+    twelveMonthsAgo.setMonth(twelveMonthsAgo.getMonth() - 12);
+
+    const registrationTrends = await User.aggregate([
+      {
+        $match: {
+          createdAt: { $gte: twelveMonthsAgo }
+        }
+      },
+      {
+        $group: {
+          _id: {
+            year: { $year: '$createdAt' },
+            month: { $month: '$createdAt' }
+          },
+          count: { $sum: 1 }
+        }
+      },
+      {
+        $sort: { '_id.year': 1, '_id.month': 1 }
+      }
+    ]);
+
+    const registrationTrendsFormatted = {};
+    registrationTrends.forEach(stat => {
+      const monthNames = [
+        'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+        'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
+      ];
+      const monthName = monthNames[stat._id.month - 1];
+      const year = stat._id.year;
+      const key = `${monthName} ${year}`;
+      registrationTrendsFormatted[key] = stat.count;
+    });
+
+    res.json({
+      totalUsers,
+      gender,
+      religion,
+      caste,
+      occupation,
+      age,
+      registrationTrends: registrationTrendsFormatted
+    });
+  } catch (error) {
+    console.error('Analytics error:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
 module.exports = router;
