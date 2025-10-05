@@ -2,20 +2,9 @@ const axios = require('axios');
 
 async function testLogin() {
   try {
-    console.log('Testing login with demo credentials...');
+    console.log('Testing login functionality...');
     
-    // First, let's check if the server is running
-    const healthResponse = await axios.get('http://localhost:5000/api/auth/me');
-    console.log('Server is running, but this should fail without auth...');
-  } catch (error) {
-    if (error.response?.status === 401) {
-      console.log('✅ Server is running (got expected 401 for /me without auth)');
-    } else {
-      console.log('Server status check:', error.message);
-    }
-  }
-  
-  try {
+    // Test with demo user
     const response = await axios.post('http://localhost:5000/api/auth/login', {
       email: 'demo@example.com',
       password: 'password'
@@ -23,11 +12,18 @@ async function testLogin() {
     
     console.log('✅ Login successful!');
     console.log('Response:', response.data);
+    
   } catch (error) {
-    console.error('❌ Login failed:');
-    console.error('Status:', error.response?.status);
-    console.error('Message:', error.response?.data);
-    console.error('Full error:', error.message);
+    console.log('❌ Login failed:');
+    if (error.response) {
+      console.log('Status:', error.response.status);
+      console.log('Data:', error.response.data);
+    } else if (error.request) {
+      console.log('No response received. Server might not be running.');
+      console.log('Error:', error.message);
+    } else {
+      console.log('Error:', error.message);
+    }
   }
 }
 
