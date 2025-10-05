@@ -2,14 +2,16 @@ const jwt = require('jsonwebtoken');
 const mockDB = require('../mockDatabase');
 const config = require('../config.dev');
 
-let User, Admin;
+let User, Admin, Volunteer;
 try {
   User = require('../models/User');
   Admin = require('../models/Admin');
+  Volunteer = require('../models/Volunteer');
 } catch (e) {
   // if model can't be loaded, we'll fallback to mockDB
   User = null;
   Admin = null;
+  Volunteer = null;
 }
 
 const auth = async (req, res, next) => {
@@ -25,9 +27,11 @@ const auth = async (req, res, next) => {
     let user = null;
     let userType = decoded.userType || 'user';
 
-    // Check if it's an admin first
+    // Check user type and find appropriate user
     if (userType === 'admin' && Admin) {
       user = await Admin.findById(decoded.userId).lean();
+    } else if (userType === 'volunteer' && Volunteer) {
+      user = await Volunteer.findById(decoded.userId).lean();
     } else if (User) {
       user = await User.findById(decoded.userId).lean();
     }

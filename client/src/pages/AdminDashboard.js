@@ -44,12 +44,18 @@ const AdminDashboard = () => {
   const [complaints, setComplaints] = useState([]);
   const [users, setUsers] = useState([]);
   const [citizens, setCitizens] = useState([]);
+  const [volunteers, setVolunteers] = useState([]);
+  const [volunteerTasks, setVolunteerTasks] = useState([]);
   const [priorityStats, setPriorityStats] = useState([]);
   const [citizenStats, setCitizenStats] = useState({});
+  const [volunteerStats, setVolunteerStats] = useState({});
+  const [taskStats, setTaskStats] = useState({});
   const [loading, setLoading] = useState(true);
   const [complaintsLoading, setComplaintsLoading] = useState(false);
   const [usersLoading, setUsersLoading] = useState(false);
   const [citizensLoading, setCitizensLoading] = useState(false);
+  const [volunteersLoading, setVolunteersLoading] = useState(false);
+  const [tasksLoading, setTasksLoading] = useState(false);
   
   // Filters
   const [complaintFilters, setComplaintFilters] = useState({
@@ -96,6 +102,18 @@ const AdminDashboard = () => {
     fetchDashboardData();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  useEffect(() => {
+    if (activeTab === 'volunteers') {
+      fetchVolunteers();
+    }
+  }, [activeTab]);
+
+  useEffect(() => {
+    if (activeTab === 'volunteer-tasks') {
+      fetchVolunteerTasks();
+    }
+  }, [activeTab]);
 
   const fetchDashboardData = async () => {
     try {
@@ -191,6 +209,62 @@ const AdminDashboard = () => {
       setCitizenStats(response.data);
     } catch (error) {
       console.error('Error fetching citizen stats:', error);
+    }
+  };
+
+  const fetchVolunteers = async () => {
+    try {
+      setVolunteersLoading(true);
+      const response = await axios.get('/api/admin/volunteers');
+      setVolunteers(response.data.volunteers || []);
+      
+      // Calculate volunteer stats
+      const volunteers = response.data.volunteers || [];
+      setVolunteerStats({
+        total: volunteers.length,
+        active: volunteers.filter(v => v.status === 'active').length,
+        pending: volunteers.filter(v => v.status === 'pending_approval').length,
+        verified: volunteers.filter(v => v.isVerified).length
+      });
+    } catch (error) {
+      console.error('Error fetching volunteers:', error);
+      // Set fallback stats
+      setVolunteerStats({
+        total: 0,
+        active: 0,
+        pending: 0,
+        verified: 0
+      });
+    } finally {
+      setVolunteersLoading(false);
+    }
+  };
+
+  const fetchVolunteerTasks = async () => {
+    try {
+      setTasksLoading(true);
+      const response = await axios.get('/api/admin/volunteers/volunteer-tasks');
+      setVolunteerTasks(response.data.tasks || []);
+      
+      // Calculate task stats
+      const tasks = response.data.tasks || [];
+      setTaskStats({
+        total: tasks.length,
+        open: tasks.filter(t => t.status === 'open').length,
+        inProgress: tasks.filter(t => t.status === 'in_progress').length,
+        completed: tasks.filter(t => t.status === 'completed').length
+      });
+    } catch (error) {
+      console.error('Error fetching volunteer tasks:', error);
+      // Set fallback stats
+      setTaskStats({
+        total: 0,
+        open: 0,
+        inProgress: 0,
+        completed: 0
+      });
+    } finally {
+      setTasksLoading(false);
     }
   };
 
@@ -419,6 +493,34 @@ const AdminDashboard = () => {
               <Database className="w-4 h-4" />
               <span>Citizens</span>
               {activeTab === 'citizens' && (
+                <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+              )}
+            </button>
+            <button
+              onClick={() => setActiveTab('volunteers')}
+              className={`flex items-center space-x-2 py-4 px-4 border-b-2 font-medium text-sm whitespace-nowrap transition-all duration-200 ${
+                activeTab === 'volunteers'
+                  ? 'border-blue-500 text-blue-600 bg-blue-50'
+                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 hover:bg-gray-50'
+              }`}
+            >
+              <UserCheck className="w-4 h-4" />
+              <span>Volunteers</span>
+              {activeTab === 'volunteers' && (
+                <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+              )}
+            </button>
+            <button
+              onClick={() => setActiveTab('volunteer-tasks')}
+              className={`flex items-center space-x-2 py-4 px-4 border-b-2 font-medium text-sm whitespace-nowrap transition-all duration-200 ${
+                activeTab === 'volunteer-tasks'
+                  ? 'border-blue-500 text-blue-600 bg-blue-50'
+                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 hover:bg-gray-50'
+              }`}
+            >
+              <FileText className="w-4 h-4" />
+              <span>Volunteer Tasks</span>
+              {activeTab === 'volunteer-tasks' && (
                 <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
               )}
             </button>
@@ -1967,6 +2069,316 @@ const AdminDashboard = () => {
                   Close
                 </button>
               </div>
+            </div>
+          </div>
+        )}
+
+        {/* Volunteers Tab */}
+        {activeTab === 'volunteers' && (
+          <div className="space-y-6">
+            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+              <div className="flex items-center justify-between mb-6">
+                <h2 className="text-2xl font-bold text-gray-900">Volunteer Management</h2>
+                <div className="flex space-x-4">
+                  <a
+                    href="/admin/volunteers"
+                    className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 flex items-center space-x-2"
+                  >
+                    <UserCheck className="w-4 h-4" />
+                    <span>Manage Volunteers</span>
+                  </a>
+                </div>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-lg p-6">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h3 className="text-lg font-semibold text-blue-900">Total Volunteers</h3>
+                      <p className="text-3xl font-bold text-blue-600">
+                        {volunteersLoading ? (
+                          <div className="animate-pulse bg-blue-200 h-8 w-16 rounded"></div>
+                        ) : (
+                          volunteerStats.total
+                        )}
+                      </p>
+                    </div>
+                    <UserCheck className="w-12 h-12 text-blue-600" />
+                  </div>
+                </div>
+                <div className="bg-gradient-to-br from-green-50 to-green-100 rounded-lg p-6">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h3 className="text-lg font-semibold text-green-900">Active Volunteers</h3>
+                      <p className="text-3xl font-bold text-green-600">
+                        {volunteersLoading ? (
+                          <div className="animate-pulse bg-green-200 h-8 w-16 rounded"></div>
+                        ) : (
+                          volunteerStats.active
+                        )}
+                      </p>
+                    </div>
+                    <CheckCircle className="w-12 h-12 text-green-600" />
+                  </div>
+                </div>
+                <div className="bg-gradient-to-br from-yellow-50 to-yellow-100 rounded-lg p-6">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h3 className="text-lg font-semibold text-yellow-900">Pending Approval</h3>
+                      <p className="text-3xl font-bold text-yellow-600">
+                        {volunteersLoading ? (
+                          <div className="animate-pulse bg-yellow-200 h-8 w-16 rounded"></div>
+                        ) : (
+                          volunteerStats.pending
+                        )}
+                      </p>
+                    </div>
+                    <Clock className="w-12 h-12 text-yellow-600" />
+                  </div>
+                </div>
+              </div>
+              
+              {/* Recent Volunteers List */}
+              {volunteers.length > 0 && (
+                <div className="mt-6">
+                  <h3 className="text-lg font-semibold text-gray-900 mb-4">Recent Volunteers</h3>
+                  <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+                    <div className="overflow-x-auto">
+                      <table className="w-full">
+                        <thead className="bg-gray-50">
+                          <tr>
+                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                              Volunteer
+                            </th>
+                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                              Status
+                            </th>
+                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                              Verification
+                            </th>
+                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                              Tasks Completed
+                            </th>
+                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                              Rating
+                            </th>
+                          </tr>
+                        </thead>
+                        <tbody className="bg-white divide-y divide-gray-200">
+                          {volunteers.slice(0, 5).map((volunteer) => (
+                            <tr key={volunteer._id} className="hover:bg-gray-50">
+                              <td className="px-6 py-4 whitespace-nowrap">
+                                <div className="flex items-center">
+                                  <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center">
+                                    <span className="text-white font-semibold text-sm">
+                                      {volunteer.name.charAt(0).toUpperCase()}
+                                    </span>
+                                  </div>
+                                  <div className="ml-4">
+                                    <div className="text-sm font-medium text-gray-900">{volunteer.name}</div>
+                                    <div className="text-sm text-gray-500">{volunteer.email}</div>
+                                  </div>
+                                </div>
+                              </td>
+                              <td className="px-6 py-4 whitespace-nowrap">
+                                <span className={`px-2 py-1 text-xs font-medium rounded-full ${
+                                  volunteer.status === 'active' ? 'bg-green-100 text-green-800' :
+                                  volunteer.status === 'pending_approval' ? 'bg-yellow-100 text-yellow-800' :
+                                  volunteer.status === 'inactive' ? 'bg-gray-100 text-gray-800' :
+                                  'bg-red-100 text-red-800'
+                                }`}>
+                                  {volunteer.status.replace('_', ' ')}
+                                </span>
+                              </td>
+                              <td className="px-6 py-4 whitespace-nowrap">
+                                <span className={`px-2 py-1 text-xs font-medium rounded-full ${
+                                  volunteer.verificationStatus === 'approved' ? 'bg-green-100 text-green-800' :
+                                  volunteer.verificationStatus === 'pending' ? 'bg-yellow-100 text-yellow-800' :
+                                  'bg-red-100 text-red-800'
+                                }`}>
+                                  {volunteer.verificationStatus}
+                                </span>
+                              </td>
+                              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                {volunteer.totalTasksCompleted || 0}
+                              </td>
+                              <td className="px-6 py-4 whitespace-nowrap">
+                                <div className="flex items-center">
+                                  <span className="text-sm text-gray-900">
+                                    {volunteer.averageRating?.toFixed(1) || '0.0'}
+                                  </span>
+                                  <span className="text-yellow-400 ml-1">★</span>
+                                </div>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* Volunteer Tasks Tab */}
+        {activeTab === 'volunteer-tasks' && (
+          <div className="space-y-6">
+            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+              <div className="flex items-center justify-between mb-6">
+                <h2 className="text-2xl font-bold text-gray-900">Volunteer Task Management</h2>
+                <div className="flex space-x-4">
+                  <a
+                    href="/admin/volunteer-tasks"
+                    className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 flex items-center space-x-2"
+                  >
+                    <FileText className="w-4 h-4" />
+                    <span>Manage Tasks</span>
+                  </a>
+                </div>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+                <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-lg p-6">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h3 className="text-lg font-semibold text-blue-900">Total Tasks</h3>
+                      <p className="text-3xl font-bold text-blue-600">
+                        {tasksLoading ? (
+                          <div className="animate-pulse bg-blue-200 h-8 w-16 rounded"></div>
+                        ) : (
+                          taskStats.total
+                        )}
+                      </p>
+                    </div>
+                    <FileText className="w-12 h-12 text-blue-600" />
+                  </div>
+                </div>
+                <div className="bg-gradient-to-br from-green-50 to-green-100 rounded-lg p-6">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h3 className="text-lg font-semibold text-green-900">Open Tasks</h3>
+                      <p className="text-3xl font-bold text-green-600">
+                        {tasksLoading ? (
+                          <div className="animate-pulse bg-green-200 h-8 w-16 rounded"></div>
+                        ) : (
+                          taskStats.open
+                        )}
+                      </p>
+                    </div>
+                    <AlertCircle className="w-12 h-12 text-green-600" />
+                  </div>
+                </div>
+                <div className="bg-gradient-to-br from-orange-50 to-orange-100 rounded-lg p-6">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h3 className="text-lg font-semibold text-orange-900">In Progress</h3>
+                      <p className="text-3xl font-bold text-orange-600">
+                        {tasksLoading ? (
+                          <div className="animate-pulse bg-orange-200 h-8 w-16 rounded"></div>
+                        ) : (
+                          taskStats.inProgress
+                        )}
+                      </p>
+                    </div>
+                    <Clock className="w-12 h-12 text-orange-600" />
+                  </div>
+                </div>
+                <div className="bg-gradient-to-br from-purple-50 to-purple-100 rounded-lg p-6">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h3 className="text-lg font-semibold text-purple-900">Completed</h3>
+                      <p className="text-3xl font-bold text-purple-600">
+                        {tasksLoading ? (
+                          <div className="animate-pulse bg-purple-200 h-8 w-16 rounded"></div>
+                        ) : (
+                          taskStats.completed
+                        )}
+                      </p>
+                    </div>
+                    <CheckCircle className="w-12 h-12 text-purple-600" />
+                  </div>
+                </div>
+              </div>
+              
+              {/* Recent Tasks List */}
+              {volunteerTasks.length > 0 && (
+                <div className="mt-6">
+                  <h3 className="text-lg font-semibold text-gray-900 mb-4">Recent Tasks</h3>
+                  <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+                    <div className="overflow-x-auto">
+                      <table className="w-full">
+                        <thead className="bg-gray-50">
+                          <tr>
+                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                              Task
+                            </th>
+                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                              Category
+                            </th>
+                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                              Priority
+                            </th>
+                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                              Status
+                            </th>
+                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                              Volunteers
+                            </th>
+                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                              Deadline
+                            </th>
+                          </tr>
+                        </thead>
+                        <tbody className="bg-white divide-y divide-gray-200">
+                          {volunteerTasks.slice(0, 5).map((task) => (
+                            <tr key={task._id} className="hover:bg-gray-50">
+                              <td className="px-6 py-4 whitespace-nowrap">
+                                <div>
+                                  <div className="text-sm font-medium text-gray-900">{task.title}</div>
+                                  <div className="text-sm text-gray-500 truncate max-w-xs">
+                                    {task.description}
+                                  </div>
+                                </div>
+                              </td>
+                              <td className="px-6 py-4 whitespace-nowrap">
+                                <span className="px-2 py-1 text-xs font-medium rounded-full bg-blue-100 text-blue-800">
+                                  {task.category?.replace('_', ' ')}
+                                </span>
+                              </td>
+                              <td className="px-6 py-4 whitespace-nowrap">
+                                <span className={`px-2 py-1 text-xs font-medium rounded-full ${
+                                  task.priority === 'urgent' ? 'bg-red-100 text-red-800' :
+                                  task.priority === 'high' ? 'bg-orange-100 text-orange-800' :
+                                  task.priority === 'medium' ? 'bg-yellow-100 text-yellow-800' :
+                                  'bg-green-100 text-green-800'
+                                }`}>
+                                  {task.priority}
+                                </span>
+                              </td>
+                              <td className="px-6 py-4 whitespace-nowrap">
+                                <span className={`px-2 py-1 text-xs font-medium rounded-full ${
+                                  task.status === 'completed' ? 'bg-green-100 text-green-800' :
+                                  task.status === 'in_progress' ? 'bg-blue-100 text-blue-800' :
+                                  task.status === 'open' ? 'bg-yellow-100 text-yellow-800' :
+                                  'bg-gray-100 text-gray-800'
+                                }`}>
+                                  {task.status.replace('_', ' ')}
+                                </span>
+                              </td>
+                              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                {task.currentVolunteers || 0} / {task.maxVolunteers || 0}
+                              </td>
+                              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                {task.deadline ? new Date(task.deadline).toLocaleDateString() : 'N/A'}
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         )}

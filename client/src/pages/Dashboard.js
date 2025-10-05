@@ -219,6 +219,26 @@ const Dashboard = () => {
                   <Star className="w-5 h-5 text-yellow-500 animate-bounce" />
                 </div>
               </Link>
+
+              <Link
+                to="/volunteer/login"
+                className="group relative overflow-hidden bg-white/70 backdrop-blur-lg rounded-2xl shadow-xl border border-white/20 p-6 hover:shadow-2xl hover:scale-105 transition-all duration-300 hover:bg-gradient-to-br hover:from-pink-50 hover:to-rose-50"
+                style={{animationDelay: '0.3s'}}
+              >
+                <div className="absolute inset-0 bg-gradient-to-br from-pink-500/10 to-rose-500/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                <div className="relative z-10 flex items-center space-x-4">
+                  <div className="w-14 h-14 bg-gradient-to-br from-pink-500 to-rose-600 rounded-xl flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform duration-300">
+                    <Heart className="w-7 h-7 text-white" />
+                  </div>
+                  <div>
+                    <h3 className="font-bold text-gray-900 text-lg group-hover:text-pink-600 transition-colors duration-300">Volunteer</h3>
+                    <p className="text-sm text-gray-600 group-hover:text-gray-700">Join as volunteer</p>
+                  </div>
+                </div>
+                <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                  <Heart className="w-5 h-5 text-pink-500 animate-bounce" />
+                </div>
+              </Link>
             </>
           )}
 
@@ -275,9 +295,22 @@ const Dashboard = () => {
                   </span>
                 </div>
                 <div>
-                  <h3 className="text-2xl font-bold text-gray-900">{user?.name || 'Citizen'}</h3>
+                  <div className="flex items-center space-x-3">
+                    <h3 className="text-2xl font-bold text-gray-900">{user?.name || 'Citizen'}</h3>
+                    {user?.role === 'volunteer' && (
+                      <div className="px-3 py-1 rounded-full bg-gradient-to-r from-green-500 to-emerald-600 text-white text-sm font-semibold flex items-center space-x-1">
+                        <Heart className="w-4 h-4" />
+                        <span>Verified Volunteer</span>
+                      </div>
+                    )}
+                  </div>
                   <p className="text-gray-600 capitalize">{user?.role || 'user'} • {user?.location?.city || 'Your City'}</p>
                   <p className="text-sm text-gray-500">Member since {user?.createdAt ? new Date(user.createdAt).toLocaleDateString() : 'Recently'}</p>
+                  {user?.role === 'volunteer' && user?.volunteerInfo && (
+                    <p className="text-sm text-green-600 font-medium mt-1">
+                      {user.volunteerInfo.points} volunteer points • {user.volunteerInfo.badge?.rank || 'bronze'} rank
+                    </p>
+                  )}
                 </div>
               </div>
               <div className="text-right">
