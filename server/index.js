@@ -1,6 +1,7 @@
 const express = require('express');
 const cors = require('cors');
 const helmet = require('helmet');
+const path = require('path');
 const rateLimit = require('express-rate-limit');
 const mongoose = require('mongoose');
 const { createServer } = require('http');
@@ -36,8 +37,8 @@ app.use(limiter);
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
-// Serve static files from uploads directory
-app.use('/uploads', express.static('uploads'));
+// Serve static files from uploads directory (use absolute path)
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 const connectDatabase = async () => {
   try {

@@ -1,6 +1,9 @@
 const express = require('express');
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcryptjs');
+const multer = require('multer');
+const path = require('path');
+const fs = require('fs');
 const { body, validationResult } = require('express-validator');
 const mockDB = require('../mockDatabase');
 const { auth } = require('../middleware/auth');
@@ -16,6 +19,40 @@ try {
 }
 
 const router = express.Router();
+
+// Ensure uploads directory exists (store uploaded files under server/uploads)
+const uploadsDir = path.join(__dirname, '../uploads');
+if (!fs.existsSync(uploadsDir)) {
+  fs.mkdirSync(uploadsDir, { recursive: true });
+}
+
+// Configure multer for document uploads
+const storage = multer.diskStorage({
+  destination: function (req, file, cb) {
+    cb(null, uploadsDir);
+  },
+  filename: function (req, file, cb) {
+    // Generate unique filename with timestamp while preserving original extension
+    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+    // sanitize original name lightly by removing spaces
+    const baseName = path.basename(file.originalname, path.extname(file.originalname)).replace(/\s+/g, '-');
+    cb(null, file.fieldname + '-' + baseName + '-' + uniqueSuffix + path.extname(file.originalname));
+  }
+});
+
+const upload = multer({
+  storage,
+  limits: {
+    fileSize: 5 * 1024 * 1024 // 5MB limit for documents
+  },
+  fileFilter: (req, file, cb) => {
+    if (file.mimetype.startsWith('image/') || file.mimetype === 'application/pdf') {
+      cb(null, true);
+    } else {
+      cb(new Error('Only image and PDF files are allowed'), false);
+    }
+  }
+});
 
 // Generate JWT token
 const generateToken = (userId, userType = 'user') => {
@@ -170,7 +207,11 @@ const handleAdminRegistration = async (req, res, adminData) => {
 // @route   POST /api/auth/register
 // @desc    Register a new user
 // @access  Public
-router.post('/register', [
+router.post('/register', upload.fields([
+  { name: 'aadhaarDocument', maxCount: 1 },
+  { name: 'governmentIdDocument', maxCount: 1 },
+  { name: 'citizenshipProofDocument', maxCount: 1 }
+]), [
   body('name').trim().isLength({ min: 2 }).withMessage('Name must be at least 2 characters'),
   body('email').isEmail().normalizeEmail().withMessage('Please provide a valid email'),
   body('password').isLength({ min: 6 }).withMessage('Password must be at least 6 characters'),
@@ -205,11 +246,29 @@ router.post('/register', [
     // Determine role - use selectedRole if provided, otherwise check government ID
     const role = selectedRole || (governmentIdNumber ? 'admin' : 'citizen');
     
+    // Handle uploaded files
+    let aadhaarDocumentPath = '';
+    let governmentIdDocumentPath = '';
+    let citizenshipProofDocumentPath = '';
+    
+    if (req.files) {
+      if (req.files.aadhaarDocument && req.files.aadhaarDocument[0]) {
+        aadhaarDocumentPath = `/uploads/${req.files.aadhaarDocument[0].filename}`;
+      }
+      if (req.files.governmentIdDocument && req.files.governmentIdDocument[0]) {
+        governmentIdDocumentPath = `/uploads/${req.files.governmentIdDocument[0].filename}`;
+      }
+      if (req.files.citizenshipProofDocument && req.files.citizenshipProofDocument[0]) {
+        citizenshipProofDocumentPath = `/uploads/${req.files.citizenshipProofDocument[0].filename}`;
+      }
+    }
+    
     console.log('Registration attempt:', { 
       email, 
       selectedRole, 
       governmentIdNumber, 
-      determinedRole: role 
+      determinedRole: role,
+      files: req.files ? Object.keys(req.files) : 'no files'
     });
     
     // Validate admin registration requirements
@@ -222,7 +281,10 @@ router.post('/register', [
       return handleAdminRegistration(req, res, {
         name, email, password, phone, alternateContact, location,
         aadhaarNumber, dateOfBirth, gender, fatherName, motherName,
-        governmentIdNumber, governmentIdDocument, citizenshipProofDocument, citizenshipProofType
+        governmentIdNumber, 
+        governmentIdDocument: governmentIdDocumentPath || governmentIdDocument, 
+        citizenshipProofDocument: citizenshipProofDocumentPath || citizenshipProofDocument, 
+        citizenshipProofType
       });
     }
 
@@ -259,7 +321,7 @@ router.post('/register', [
         location: userLocation,
         role,
         aadhaarNumber,
-        aadhaarDocument,
+        aadhaarDocument: aadhaarDocumentPath || aadhaarDocument,
         dateOfBirth,
         gender,
         fatherName,
@@ -273,8 +335,8 @@ router.post('/register', [
         nativePlace,
         residenceType,
         governmentIdNumber,
-        governmentIdDocument,
-        citizenshipProofDocument,
+        governmentIdDocument: governmentIdDocumentPath || governmentIdDocument,
+        citizenshipProofDocument: citizenshipProofDocumentPath || citizenshipProofDocument,
         citizenshipProofType,
         preferences: {
           language: 'en',
@@ -318,7 +380,7 @@ router.post('/register', [
       location: userLocation,
       role,
       aadhaarNumber,
-      aadhaarDocument,
+      aadhaarDocument: aadhaarDocumentPath || aadhaarDocument,
       dateOfBirth,
       gender,
       fatherName,
@@ -332,8 +394,8 @@ router.post('/register', [
       nativePlace,
       residenceType,
       governmentIdNumber,
-      governmentIdDocument,
-      citizenshipProofDocument,
+      governmentIdDocument: governmentIdDocumentPath || governmentIdDocument,
+      citizenshipProofDocument: citizenshipProofDocumentPath || citizenshipProofDocument,
       citizenshipProofType,
       preferences: {
         language: 'en',
