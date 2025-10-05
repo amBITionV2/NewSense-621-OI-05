@@ -50,6 +50,20 @@ router.get('/dashboard', auth, async (req, res) => {
       { $sort: { count: -1 } }
     ]);
 
+    // Get priority statistics
+    const priorityStats = await Complaint.aggregate([
+      {
+        $group: {
+          _id: '$priority',
+          count: { $sum: 1 }
+        }
+      },
+      { $sort: { count: -1 } }
+    ]);
+
+    // Get urgent complaints count
+    const urgentComplaints = await Complaint.countDocuments({ priority: 'urgent' });
+
     // Get complaints by status
     const statusStats = await Complaint.aggregate([
       {
@@ -90,6 +104,7 @@ router.get('/dashboard', auth, async (req, res) => {
           inProgress: inProgressComplaints,
           resolved: resolvedComplaints,
           closed: closedComplaints,
+          urgent: urgentComplaints,
           resolutionRate
         },
         users: {
@@ -101,6 +116,7 @@ router.get('/dashboard', auth, async (req, res) => {
       },
       recentComplaints,
       categoryStats,
+      priorityStats,
       statusStats,
       monthlyTrends
     });

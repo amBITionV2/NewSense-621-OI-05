@@ -44,6 +44,7 @@ const AdminDashboard = () => {
   const [complaints, setComplaints] = useState([]);
   const [users, setUsers] = useState([]);
   const [citizens, setCitizens] = useState([]);
+  const [priorityStats, setPriorityStats] = useState([]);
   const [citizenStats, setCitizenStats] = useState({});
   const [loading, setLoading] = useState(true);
   const [complaintsLoading, setComplaintsLoading] = useState(false);
@@ -54,6 +55,7 @@ const AdminDashboard = () => {
   const [complaintFilters, setComplaintFilters] = useState({
     status: '',
     category: '',
+    priority: '',
     search: ''
   });
   const [userFilters, setUserFilters] = useState({
@@ -99,6 +101,7 @@ const AdminDashboard = () => {
     try {
       const response = await axios.get('/api/admin/dashboard');
       setDashboardData(response.data);
+      setPriorityStats(response.data.priorityStats || []);
     } catch (error) {
       console.error('Error fetching dashboard data:', error);
     } finally {
@@ -112,6 +115,7 @@ const AdminDashboard = () => {
       const params = new URLSearchParams();
       if (complaintFilters.status) params.append('status', complaintFilters.status);
       if (complaintFilters.category) params.append('category', complaintFilters.category);
+      if (complaintFilters.priority) params.append('priority', complaintFilters.priority);
       if (complaintFilters.search) params.append('search', complaintFilters.search);
       
       const response = await axios.get(`/api/admin/complaints?${params.toString()}`);
@@ -481,6 +485,18 @@ const AdminDashboard = () => {
               <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
                 <div className="flex items-center justify-between">
                   <div>
+                    <p className="text-sm font-medium text-gray-600">Urgent Issues</p>
+                    <p className="text-2xl font-bold text-gray-900">{stats.complaints?.urgent || 0}</p>
+                  </div>
+                  <div className="w-12 h-12 bg-red-100 rounded-lg flex items-center justify-center">
+                    <AlertCircle className="w-6 h-6 text-red-600" />
+                  </div>
+                </div>
+              </div>
+
+              <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+                <div className="flex items-center justify-between">
+                  <div>
                     <p className="text-sm font-medium text-gray-600">Total Users</p>
                     <p className="text-2xl font-bold text-gray-900">{stats.users?.total || 0}</p>
                   </div>
@@ -490,6 +506,7 @@ const AdminDashboard = () => {
                 </div>
               </div>
             </div>
+
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
               {/* Recent Complaints */}
@@ -508,7 +525,17 @@ const AdminDashboard = () => {
                       {recentComplaints.map((complaint) => (
                         <div key={complaint._id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
                           <div className="flex-1">
-                            <h4 className="font-medium text-gray-900">{complaint.title}</h4>
+                            <div className="flex items-center space-x-2 mb-1">
+                              <h4 className="font-medium text-gray-900">{complaint.title}</h4>
+                              <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                                complaint.priority === 'low' ? 'bg-green-100 text-green-800' :
+                                complaint.priority === 'medium' ? 'bg-yellow-100 text-yellow-800' :
+                                complaint.priority === 'high' ? 'bg-orange-100 text-orange-800' :
+                                complaint.priority === 'urgent' ? 'bg-red-100 text-red-800' : 'bg-gray-100 text-gray-800'
+                              }`}>
+                                {complaint.priority}
+                              </span>
+                            </div>
                             <p className="text-sm text-gray-600">{complaint.user?.name}</p>
                             <p className="text-xs text-gray-500">
                               {new Date(complaint.createdAt).toLocaleDateString()}
@@ -570,6 +597,57 @@ const AdminDashboard = () => {
                   )}
                 </div>
               </div>
+
+              {/* Priority Distribution */}
+              <div className="bg-white rounded-lg shadow-sm border border-gray-200">
+                <div className="px-6 py-4 border-b border-gray-200">
+                  <h2 className="text-lg font-semibold text-gray-900">Priority Distribution</h2>
+                </div>
+                <div className="p-6">
+                  {priorityStats.length === 0 ? (
+                    <div className="text-center py-8">
+                      <BarChart3 className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+                      <p className="text-gray-600">No data available</p>
+                    </div>
+                  ) : (
+                    <div className="space-y-3">
+                      {priorityStats.map((priority) => (
+                        <div key={priority._id} className="flex items-center justify-between">
+                          <div className="flex items-center space-x-2">
+                            <span className={`w-3 h-3 rounded-full ${
+                              priority._id === 'low' ? 'bg-green-500' :
+                              priority._id === 'medium' ? 'bg-yellow-500' :
+                              priority._id === 'high' ? 'bg-orange-500' :
+                              priority._id === 'urgent' ? 'bg-red-500' : 'bg-gray-500'
+                            }`}></span>
+                            <span className="text-sm font-medium text-gray-700 capitalize">
+                              {priority._id}
+                            </span>
+                          </div>
+                          <div className="flex items-center space-x-2">
+                            <div className="w-20 bg-gray-200 rounded-full h-2">
+                              <div 
+                                className={`h-2 rounded-full ${
+                                  priority._id === 'low' ? 'bg-green-500' :
+                                  priority._id === 'medium' ? 'bg-yellow-500' :
+                                  priority._id === 'high' ? 'bg-orange-500' :
+                                  priority._id === 'urgent' ? 'bg-red-500' : 'bg-gray-500'
+                                }`}
+                                style={{ 
+                                  width: `${(priority.count / Math.max(...priorityStats.map(p => p.count))) * 100}%` 
+                                }}
+                              ></div>
+                            </div>
+                            <span className="text-sm text-gray-600 w-8 text-right">
+                              {priority.count}
+                            </span>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
             </div>
           </div>
         )}
@@ -578,7 +656,7 @@ const AdminDashboard = () => {
           <div className="space-y-6">
             {/* Filters */}
             <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">Status</label>
                   <select
@@ -591,6 +669,20 @@ const AdminDashboard = () => {
                     <option value="in-progress">In Progress</option>
                     <option value="resolved">Resolved</option>
                     <option value="closed">Closed</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Priority</label>
+                  <select
+                    value={complaintFilters.priority}
+                    onChange={(e) => setComplaintFilters({...complaintFilters, priority: e.target.value})}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  >
+                    <option value="">All Priorities</option>
+                    <option value="low">Low</option>
+                    <option value="medium">Medium</option>
+                    <option value="high">High</option>
+                    <option value="urgent">Urgent</option>
                   </select>
                 </div>
                 <div>
@@ -666,6 +758,7 @@ const AdminDashboard = () => {
                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Complaint</th>
                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">User</th>
                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Category</th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Priority</th>
                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
@@ -686,6 +779,16 @@ const AdminDashboard = () => {
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap">
                             <span className="text-sm text-gray-900 capitalize">{complaint.category.replace('-', ' ')}</span>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                              complaint.priority === 'low' ? 'bg-green-100 text-green-800' :
+                              complaint.priority === 'medium' ? 'bg-yellow-100 text-yellow-800' :
+                              complaint.priority === 'high' ? 'bg-orange-100 text-orange-800' :
+                              complaint.priority === 'urgent' ? 'bg-red-100 text-red-800' : 'bg-gray-100 text-gray-800'
+                            }`}>
+                              {complaint.priority}
+                            </span>
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap">
                             <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
