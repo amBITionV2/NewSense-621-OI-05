@@ -20,6 +20,7 @@ const LeafletMap = ({ onIssueClick, selectedIssue, className = '', isInteractive
   const [error, setError] = useState(null);
   const [currentLocation, setCurrentLocation] = useState(null);
   const [selectedPosition, setSelectedPosition] = useState(null);
+  const [mountMap, setMountMap] = useState(false);
 
   // Category icons and colors
   const categoryConfig = {
@@ -53,25 +54,24 @@ const LeafletMap = ({ onIssueClick, selectedIssue, className = '', isInteractive
     'closed': '#6b7280'
   };
 
-  // Get current location or use Bangalore for sample data
+  // Get current location or use defaults immediately to avoid prolonged null state
   useEffect(() => {
     if (sampleIssues.length > 0) {
-      // Use Bangalore coordinates for sample data
       setCurrentLocation([12.9716, 77.5946]);
-    } else if (navigator.geolocation) {
+      return;
+    }
+    // set a fast default immediately
+    setCurrentLocation([28.6139, 77.2090]);
+    if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
         (position) => {
           setCurrentLocation([position.coords.latitude, position.coords.longitude]);
         },
-        (error) => {
-          console.error('Error getting current location:', error);
-          // Default to Delhi if location access fails
-          setCurrentLocation([28.6139, 77.2090]);
-        }
+        () => {
+          // keep default
+        },
+        { timeout: 3000, maximumAge: 60000 }
       );
-    } else {
-      // Default to Delhi if geolocation is not supported
-      setCurrentLocation([28.6139, 77.2090]);
     }
   }, [sampleIssues]);
 
@@ -215,6 +215,14 @@ const LeafletMap = ({ onIssueClick, selectedIssue, className = '', isInteractive
     return null;
   };
 
+  // Defer map mount slightly to ensure layout is stable
+  useEffect(() => {
+    const timer = setTimeout(() => setMountMap(true), 300);
+    return () => clearTimeout(timer);
+  }, []);
+
+  // No size invalidation to avoid Leaflet pane errors during mount
+
   // Center map on selected issue
   useEffect(() => {
     if (selectedIssue && selectedIssue.location && selectedIssue.location.coordinates) {
@@ -225,7 +233,7 @@ const LeafletMap = ({ onIssueClick, selectedIssue, className = '', isInteractive
     }
   }, [selectedIssue]);
 
-  if (loading) {
+  if (!currentLocation) {
     return (
       <div className={`flex items-center justify-center bg-gray-100 rounded-lg ${className}`}>
         <div className="text-center">
@@ -289,12 +297,17 @@ const LeafletMap = ({ onIssueClick, selectedIssue, className = '', isInteractive
           </p>
         </div>
       )}
-      <MapContainer
-        center={currentLocation || [12.9716, 77.5946]}
-        zoom={sampleIssues.length > 0 ? 11 : 13}
-        style={{ height: '100%', width: '100%' }}
-        className="rounded-lg"
-      >
+      {mountMap && currentLocation && (
+        <MapContainer
+          center={currentLocation}
+          zoom={sampleIssues.length > 0 ? 11 : 13}
+          style={{ height: '100%', width: '100%' }}
+          className="rounded-lg"
+          scrollWheelZoom={false}
+          zoomAnimation={false}
+          doubleClickZoom={false}
+          key={`${currentLocation[0]},${currentLocation[1]}`}
+        >
         <TileLayer
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
@@ -430,7 +443,8 @@ const LeafletMap = ({ onIssueClick, selectedIssue, className = '', isInteractive
             </Marker>
           );
         })}
-      </MapContainer>
+        </MapContainer>
+      )}
       
       {/* Map Legend */}
       <div className="absolute top-4 right-4 bg-white rounded-lg shadow-lg p-4 max-w-xs">

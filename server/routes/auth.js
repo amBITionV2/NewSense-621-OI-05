@@ -437,30 +437,62 @@ router.post('/login', [
 
     const { email, password } = req.body;
 
-    // For demo purposes, skip database checks and use mock database directly
-    console.log('Checking mockDB for email:', email);
-    console.log('Available users in mockDB:', mockDB.users.map(u => ({ email: u.email, name: u.name })));
-    const user = mockDB.findUserByEmail(email);
-    if (!user) {
-      console.log('User not found in mockDB');
-      return res.status(400).json({ message: 'Invalid credentials' });
-    }
-    console.log('User found:', { email: user.email, name: user.name, hasPassword: !!user.password });
-    console.log('Stored password hash:', user.password);
-    console.log('Input password:', password);
+    // Build case-insensitive exact-match query for email to support legacy records
+    const escapeRegex = (str) => str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const emailQuery = { email: { $regex: new RegExp(`^${escapeRegex(email)}$`, 'i') } };
 
-    // For demo purposes, use simple password check
-    const isMatch = password === 'password';
-    console.log('Password match result:', isMatch);
-    if (!isMatch) {
-      console.log('Password does not match');
-      return res.status(400).json({ message: 'Invalid credentials' });
+    // Prefer MongoDB models when available
+    if (Admin || User) {
+      // Try admin first
+      if (Admin) {
+        const admin = await Admin.findOne(emailQuery).lean();
+        if (admin) {
+          const adminDoc = await Admin.findById(admin._id); // get doc instance for compare
+          let isMatch = await adminDoc.comparePassword(password);
+          // Backward-compat: accept plaintext-stored passwords and upgrade to bcrypt
+          if (!isMatch && typeof adminDoc.password === 'string' && adminDoc.password === password) {
+            adminDoc.password = password; // pre-save hook will hash
+            await adminDoc.save();
+            isMatch = true;
+          }
+          if (!isMatch) return res.status(400).json({ message: 'Invalid credentials' });
+          await Admin.findByIdAndUpdate(admin._id, { lastLogin: new Date() });
+          const token = generateToken(admin._id, 'admin');
+          const { password: _p, ...adminSafe } = admin;
+          return res.json({ message: 'Login successful', token, user: { id: admin._id, ...adminSafe, userType: 'admin' } });
+        }
+      }
+
+      if (User) {
+        const userFound = await User.findOne(emailQuery).lean();
+        if (!userFound) return res.status(400).json({ message: 'Invalid credentials' });
+        const userDoc = await User.findById(userFound._id);
+        let isMatch = await userDoc.comparePassword(password);
+        // Backward-compat: accept plaintext-stored passwords and upgrade to bcrypt
+        if (!isMatch && typeof userDoc.password === 'string' && userDoc.password === password) {
+          userDoc.password = password; // pre-save hook will hash
+          await userDoc.save();
+          isMatch = true;
+        }
+        if (!isMatch) return res.status(400).json({ message: 'Invalid credentials' });
+        await User.findByIdAndUpdate(userFound._id, { lastLogin: new Date() });
+        const token = generateToken(userFound._id);
+        const { password: _p, ...userSafe } = userFound;
+        return res.json({ message: 'Login successful', token, user: { id: userFound._id, ...userSafe } });
+      }
     }
+
+    // Fallback to mock database only if models are unavailable
+    const user = mockDB.findUserByEmail(email);
+    if (!user) return res.status(400).json({ message: 'Invalid credentials' });
+
+    const isMatch = await bcrypt.compare(password, user.password).catch(() => false);
+    if (!isMatch) return res.status(400).json({ message: 'Invalid credentials' });
 
     mockDB.updateUser(user._id, { lastLogin: new Date() });
     const token = generateToken(user._id);
-
-    res.json({ message: 'Login successful', token, user: { id: user._id, name: user.name, email: user.email, role: user.role, location: user.location } });
+    const { password: _pw, ...userSafe } = user;
+    res.json({ message: 'Login successful', token, user: { id: user._id, ...userSafe } });
   } catch (error) {
     console.error('Login error:', error);
     res.status(500).json({ message: 'Server error during login' });

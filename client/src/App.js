@@ -18,6 +18,7 @@ import ComplaintDetails from './pages/ComplaintDetails';
 import EducationalVideos from './pages/EducationalVideos';
 import Translation from './pages/Translation';
 import AdminDashboard from './pages/AdminDashboard';
+import AdminLogin from './pages/AdminLogin';
 import Profile from './pages/Profile';
 import Community from './pages/Community';
 import VolunteerLogin from './pages/VolunteerLogin';
@@ -184,6 +185,14 @@ function AppContent() {
             />
 
             {/* Admin Routes */}
+            <Route 
+              path="/admin/login" 
+              element={
+                <PublicRoute>
+                  <AdminLogin />
+                </PublicRoute>
+              } 
+            />
             <Route 
               path="/admin" 
               element={
